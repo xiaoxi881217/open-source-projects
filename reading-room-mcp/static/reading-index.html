@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Reading Room MCP</title>
+<link rel="stylesheet" href="static/reading-app.css?v=20260717-7">
+</head>
+<body>
+<div class="app">
+  <section id="shelf" class="screen active"><div class="shell">
+    <div class="top"><div class="brand"><span class="brand-mark">▤</span>Reading Room</div><div class="top-actions"><button class="icon-btn" id="searchBtn" aria-label="搜索">⌕</button><button class="icon-btn" id="uploadBtn" aria-label="添加书籍">＋</button></div><input class="upload" id="file" type="file" accept=".txt,.md,.epub,text/*"></div>
+    <label class="search">⌕ <input id="search" placeholder="搜索 0 本书"></label>
+    <section class="shelf-section" id="currentSection"><div class="section-heading"><h2>当前在读</h2></div><div id="currentReading"></div></section>
+    <section class="shelf-section" id="recentSection"><div class="section-heading"><h2>最近阅读</h2><small>横向滑动</small></div><div id="recentBooks" class="recent-rail"></div></section>
+    <section class="shelf-section"><div class="section-heading"><h2>全部书籍</h2><small id="bookCount"></small></div><div id="books" class="book-wall"></div><div id="empty" class="empty">还没有书，点右上角上传一本。</div></section>
+  </div></section>
+  <section id="inread" class="screen"><div class="shell">
+    <div class="top"><div class="brand"><span class="brand-mark">▤</span>正在读</div><button class="icon-btn" id="inreadRefresh" aria-label="刷新">↻</button></div>
+    <div id="inreadCurrent"></div><section class="shelf-section" id="inreadMoreSection"><div class="section-heading"><h2>其他在读</h2></div><div id="inreadList" class="inread-list"></div></section>
+  </div></section>
+  <section id="bookHome" class="screen"><div class="page-shell">
+    <div class="top"><button class="icon-btn" id="bookHomeBack" aria-label="返回">‹</button><div class="top-actions"><button class="icon-btn" id="bookHomeMore" aria-label="更多">•••</button></div></div>
+    <div id="bookHero" class="book-hero"></div><div id="bookActions" class="book-actions"></div><div id="bookSnippet"></div>
+  </div></section>
+  <section id="summaries" class="screen"><div class="page-shell">
+    <div class="top"><button class="icon-btn internalBack" aria-label="返回">‹</button><div class="top-title"><h1>剧情进度</h1><p>左右翻看剧情节点</p></div><button class="icon-btn" id="summaryRefresh" aria-label="刷新">↻</button></div>
+    <div id="summaryList" class="summary-carousel" aria-label="剧情节点"></div><div id="summaryDots" class="pager-dots" aria-hidden="true"></div>
+  </div></section>
+  <section id="history" class="screen"><div class="page-shell">
+    <div class="top"><button class="icon-btn internalBack" aria-label="返回">‹</button><div class="top-title"><h1>读过的地方</h1></div><button class="icon-btn" id="refresh" aria-label="刷新">↻</button></div>
+    <div id="historyBook" class="compact-book"></div>
+    <div class="section-heading"><h2>阅读笔记</h2><div class="history-arrows"><button id="historyPrev" aria-label="上一条">←</button><button id="historyNext" aria-label="下一条">→</button></div></div>
+    <div id="historyList" class="history-carousel" aria-label="阅读记录"></div><div id="historyDots" class="pager-dots" aria-hidden="true"></div>
+  </div></section>
+  <section id="reader" class="screen reader-screen"><div class="shell reader-shell">
+    <div class="reader-head"><button class="icon-btn" id="readerBackBtn" type="button">‹</button><h1 id="readerTitle" aria-hidden="true"></h1><div class="reader-actions"><button class="icon-btn" id="chapterBtn" type="button">目</button><button class="icon-btn" id="readerSettingsBtn" type="button">Aa</button><button class="icon-btn" id="readerExitBtn" type="button">×</button></div><input class="cover-input" id="coverFile" type="file" accept="image/*"></div>
+    <div class="book-stage"><div id="paper" class="reading-paper"><div class="reader-meta" id="readerMeta"></div><article id="page" class="page"></article><button class="tap-zone left" id="pagePrev" aria-label="上一页"></button><button class="tap-zone right" id="pageNext" aria-label="下一页"></button></div></div>
+  </div></section>
+  <div class="chapter-panel" id="chapterPanel"><div class="chapter-sheet"><div class="chapter-head"><b>章节目录</b><button class="icon-btn" id="chapterClose" type="button">×</button></div><div class="chapter-list" id="chapterList"></div></div></div>
+  <div class="settings-panel" id="settingsPanel"><div class="settings-sheet">
+    <div class="chapter-head"><b>阅读设置</b><button class="icon-btn" id="settingsClose" type="button">×</button></div>
+    <div class="settings-preview"><small>排版预览</small><h3 id="settingsPreviewTitle">正文预览</h3><p id="settingsPreviewText"></p></div>
+    <div class="preset-row"><button class="preset-btn" data-preset="compact">紧凑</button><button class="preset-btn" data-preset="comfortable">舒适</button><button class="preset-btn" data-preset="loose">宽松</button></div>
+    <section class="settings-group"><div class="settings-group-title">Aa　文字</div>
+      <div class="settings-row"><div class="settings-head"><span>字体大小</span><span class="settings-value" id="fontSizeValue"></span></div><input id="fontSizeRange" type="range" min="14" max="30" step="1"></div>
+      <div class="settings-row"><div class="settings-head"><span>行距</span><span class="settings-value" id="lineHeightValue"></span></div><input id="lineHeightRange" type="range" min="1.4" max="2.4" step="0.05"></div>
+      <div class="settings-row"><div class="settings-head"><span>字重</span><span class="settings-value" id="fontWeightValue"></span></div><input id="fontWeightRange" type="range" min="300" max="700" step="50"></div>
+    </section>
+    <section class="settings-group"><div class="settings-group-title">▧　段落与页面</div>
+      <div class="settings-row layout"><div class="settings-head"><span>段落间距</span><span class="settings-value" id="paragraphGapValue"></span></div><input id="paragraphGapRange" type="range" min="0" max="24" step="1"></div>
+      <div class="settings-row layout"><div class="settings-head"><span>左右页边距</span><span class="settings-value" id="paddingXValue"></span></div><input id="paddingXRange" type="range" min="0" max="48" step="1"></div>
+    </section>
+    <details class="advanced-settings"><summary>高级排版</summary>
+      <div class="settings-row"><div class="settings-head"><span>章节标题大小</span><span class="settings-value" id="titleSizeValue"></span></div><input id="titleSizeRange" type="range" min="18" max="42" step="1"></div>
+      <div class="settings-row"><div class="settings-head"><span>章节标题位置</span><span class="settings-value" id="titleOffsetValue"></span></div><input id="titleOffsetRange" type="range" min="-20" max="40" step="1"></div>
+      <div class="settings-row layout"><div class="settings-head"><span>正文整体上下</span><span class="settings-value" id="contentOffsetYValue"></span></div><input id="contentOffsetYRange" type="range" min="-80" max="80" step="1"></div>
+      <div class="settings-row layout"><div class="settings-head"><span>正文上边界</span><span class="settings-value" id="pageTopValue"></span></div><input id="pageTopRange" type="range" min="6" max="28" step="1"></div>
+      <div class="settings-row layout"><div class="settings-head"><span>正文下边界</span><span class="settings-value" id="pageBottomValue"></span></div><input id="pageBottomRange" type="range" min="0" max="18" step="1"></div>
+    </details>
+    <div class="settings-footer"><button class="settings-reset" id="settingsReset" type="button">恢复默认</button><button class="settings-done" id="settingsDone" type="button">完成</button></div>
+  </div></div>
+  <div class="book-menu-panel" id="bookMenuPanel" aria-hidden="true"><div class="book-menu-card" role="dialog" aria-modal="true" aria-labelledby="bookMenuTitle">
+    <div class="book-menu-head"><div><small>书籍操作</small><b id="bookMenuTitle"></b></div><button id="bookMenuClose" type="button" aria-label="关闭">×</button></div>
+    <div class="book-menu-actions" id="bookMenuActions"><button id="bookCoverAction" type="button"><span>▧</span><span><b>更换封面</b><small>选择一张新的图片</small></span></button><button id="bookDeleteAction" class="danger-action" type="button"><span>⌫</span><span><b>删除书籍</b><small>同时删除阅读记录</small></span></button></div>
+    <div class="book-delete-confirm" id="bookDeleteConfirm"><p>确定删除这本书？</p><div><button id="bookDeleteCancel" type="button">取消</button><button id="bookDeleteConfirmAction" type="button">删除</button></div></div>
+  </div></div>
+  <nav class="clean-nav"><button class="nav-btn active" data-nav="shelf"><span class="nav-ic">▤</span><span>书架</span></button><button class="nav-btn" data-nav="inread"><span class="nav-ic">▥</span><span>在读</span></button></nav>
+</div>
+<script src="static/reading-app.js?v=20260717-5"></script>
+</body></html>

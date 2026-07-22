@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env
+data/
+uploads/
+covers/
+*.log
+*.tar.gz
+deploy-backups/
+.deploy-*/
+.static-hotfix-*/
