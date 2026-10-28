@@ -1,6 +1,7 @@
 package com.kingzcheung.xime.ui.menubar
 
 import android.content.Intent
+import com.kingzcheung.xime.ui.keyboard.homeBackdropCover
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -51,7 +52,7 @@ internal fun HomeKeyboardDraftBody(
     val scheme = MaterialTheme.colorScheme.copy(background = background, surface = card, onSurface = text,
         onBackground = text, onSurfaceVariant = text.copy(alpha = .7f))
     MaterialTheme(colorScheme = scheme) {
-        Column(Modifier.fillMaxSize().background(background).padding(horizontal = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(Modifier.fillMaxSize().homeBackdropCover(background).padding(horizontal = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (chosen == null) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     TextButton(onClick = onManage) { Text("写 / 管理") }

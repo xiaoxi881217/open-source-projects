@@ -51,7 +51,7 @@ android {
         applicationId = "cn.qiyanja.littlehome.keyboard"
         minSdk = 28
         targetSdk = 35
-        versionCode = 20261061
+        versionCode = 20261062
         versionName = "3.4.1"
 
 
