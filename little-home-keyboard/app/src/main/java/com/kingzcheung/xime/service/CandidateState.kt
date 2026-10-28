@@ -12,6 +12,8 @@ data class CandidateState(
     val hasPrevPage: Boolean = false,
     val associationCandidates: List<String> = emptyList(),
     val pendingEnglishText: String = "",
+    /** 只含预设域名，不含正在输入的邮箱用户名。 */
+    val emailSuffixCandidates: List<String> = emptyList(),
     val isShowingRecentClipboard: Boolean = false,
     /** 当前宿主是否支持英文候选的"回删替换"（终端等受限宿主为 false，不展示英文候选）。 */
     val englishReplaceSupported: Boolean = true,

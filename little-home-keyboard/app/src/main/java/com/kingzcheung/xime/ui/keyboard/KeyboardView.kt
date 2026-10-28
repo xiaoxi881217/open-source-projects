@@ -341,13 +341,19 @@ fun KeyboardView(
             } else {
                 emptyList()
             }
+            val emailBarActive=cs.emailSuffixCandidates.isNotEmpty() && !cs.isComposing && cs.inputText.isEmpty() &&
+                cs.preeditText.isEmpty() && !showHandwritingCandidates &&
+                !state.isCalculatorMode && !candidatePageExpanded && !state.quickSendFormFocused && !state.toolPanelInputFocused &&
+                (page !is KeyboardPage.Overlay || (page as KeyboardPage.Overlay).route is OverlayRoute.Symbol)
             val candidateBarState = remember(
                 cs.candidates, cs.candidateComments, cs.inputText, cs.preeditText, cs.isComposing,
                 cs.associationCandidates, cs.pendingEnglishText, cs.isShowingRecentClipboard, cs.hasNextPage,
                 state.isCalculatorMode, handwritingCandidates, handwritingComments, showHandwritingCandidates,
-                railExpanded, cs.preeditCaretPos, state.recentClipboardItems,
+                railExpanded, cs.preeditCaretPos, state.recentClipboardItems, cs.emailSuffixCandidates, emailBarActive,
             ) {
-                if (showHandwritingCandidates) {
+                if(emailBarActive) {
+                    CandidateBarState.EnglishCandidates(candidates=cs.emailSuffixCandidates)
+                } else if (showHandwritingCandidates) {
                     CandidateBarState.AssociationOnly(
                         candidates = handwritingCandidates,
                         comments = handwritingComments,
@@ -513,7 +519,9 @@ fun KeyboardView(
                     // 前者就是"轻触空格结束"走的同一条路径（含震动反馈）。
                     onVoiceStop = { callbacks.onVoiceModeChange?.invoke(false) },
                     onCandidateSelect = { index ->
-                        if (showHandwritingCandidates && index in handwritingCandidates.indices) {
+                        if(emailBarActive) {
+                            cs.emailSuffixCandidates.getOrNull(index)?.let{callbacks.onEmailSuffixSelect?.invoke(it)}
+                        } else if (showHandwritingCandidates && index in handwritingCandidates.indices) {
                             // 手写候选点选绕过了服务层 selectCandidate（其入口统一有按键反馈），
                             // 这里补齐同款反馈，保证各键盘点选手感一致
                             callbacks.onKeyPressDown?.invoke("standard")
@@ -553,6 +561,7 @@ fun KeyboardView(
                         }
                     },
                     onCandidateLongPress = { index ->
+                        if(!emailBarActive) {
                         val railEntry = if (expandedDataMode) railExpanded.getOrNull(index) else null
                         val word = railEntry?.second?.text
                             ?: candidateState.value.candidates.getOrNull(index)
@@ -564,6 +573,7 @@ fun KeyboardView(
                                     callbacks.onCandidateDelete?.invoke(index)
                                 }
                             }
+                        }
                         }
                     },
                     onClearAssociation = {

@@ -36,6 +36,7 @@ object SettingsRoutes {
     const val Clipboard = "clipboard"
     const val HomeDrafts = "home_drafts"
     const val ClipboardHistory = "clipboard_history"
+    const val HomeEmailSuffixes = "home_email_suffixes"
     const val HomeConnection = "home_connection"
     const val ClipboardSync = "clipboard_sync"
     const val Backup = "backup"

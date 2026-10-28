@@ -328,6 +328,43 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     private var editorRestricted: Boolean = false
     /** 秘密输入框（密码/TYPE_NULL）：英文联想与回删替换的统一禁用线 */
     private var editorSecret: Boolean = false
+    private var emailSelectionCollapsed=false
+    private val emailSuffixRefresh=Runnable { refreshEmailSuffixCandidates() }
+
+    /** 合并同一次上屏/光标回调，只在主线程读取光标前一个字符。 */
+    internal fun requestEmailSuffixRefresh() {
+        mainHandler.removeCallbacks(emailSuffixRefresh)
+        mainHandler.post(emailSuffixRefresh)
+    }
+    private fun refreshEmailSuffixCandidates():List<String> {
+        val cs=candidateState.value;val ui=uiState.value
+        val enabled=com.kingzcheung.xime.home.HomeEmailSuffixStore.enabled(this)
+        val allowed=com.kingzcheung.xime.home.HomeEmailSuffixPolicy.canRead(enabled,
+            editorSecret || pluginEvents.isCurrentEditorSensitive,
+            emailSelectionCollapsed,
+            cs.isComposing || cs.inputText.isNotEmpty() || cs.preeditText.isNotEmpty() || inputBoxComposingActive || calculatorEngine.isActive(),
+            ui.quickSendFormFocused || ui.toolPanelInputFocused || ui.isVoiceMode,
+            isInputViewShown)
+        val before=if(allowed)runCatching{currentInputConnection?.getTextBeforeCursor(1,0)?.toString()}.getOrNull() else null
+        val labels=if(allowed && before=="@")com.kingzcheung.xime.home.HomeEmailSuffixPolicy.suggestions(before,
+            com.kingzcheung.xime.home.HomeEmailSuffixStore.domains(this)) else emptyList()
+        if(cs.emailSuffixCandidates!=labels || (labels.isNotEmpty() && (cs.pendingEnglishText.isNotEmpty() || cs.associationCandidates.isNotEmpty()))) {
+            candidateState.value=candidateState.value.copy(emailSuffixCandidates=labels,
+                pendingEnglishText=if(labels.isNotEmpty())"" else cs.pendingEnglishText,
+                associationCandidates=if(labels.isNotEmpty())emptyList() else cs.associationCandidates)
+        }
+        return labels
+    }
+    internal fun selectEmailSuffix(label:String):Boolean {
+        val labels=refreshEmailSuffixCandidates()
+        val suffix=com.kingzcheung.xime.home.HomeEmailSuffixPolicy.completion(label,labels)?:return false
+        val ic=currentInputConnection?:return false
+        candidateState.value=candidateState.value.copy(emailSuffixCandidates=emptyList())
+        val committed=runCatching{ic.commitText(suffix,1)}.getOrDefault(false)
+        requestEmailSuffixRefresh()
+        return committed
+    }
+
 
     internal var isTrackingVoiceButtons = false
     internal var voiceRecordingStarted = false
@@ -2207,6 +2244,9 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     
     override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
         super.onStartInput(attribute, restarting)
+        emailSelectionCollapsed=attribute!=null && attribute.initialSelStart>=0 && attribute.initialSelStart==attribute.initialSelEnd
+        candidateState.value=candidateState.value.copy(emailSuffixCandidates=emptyList())
+
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
         loadDarkModePreference()
 
@@ -2410,6 +2450,7 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        requestEmailSuffixRefresh()
         info?.let { updateEnterKeyText(it) }
         hasHardwareKeyboard = SettingsPreferences.isHardwareKeyboardDetectionEnabled(this) &&
             resources.configuration.keyboard != android.content.res.Configuration.KEYBOARD_NOKEYS
@@ -2475,6 +2516,8 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
         candidatesEnd: Int,
     ) {
         super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd)
+        emailSelectionCollapsed=newSelStart>=0 && newSelStart==newSelEnd
+        requestEmailSuffixRefresh()
         // 自身写入 InputConnection 会同步触发本回调，处理中直接忽略，避免递归
         if (!selectionUpdateGate.tryEnter()) return
         try {
@@ -2758,6 +2801,8 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     }
     
     private fun clearInputState() {
+        mainHandler.removeCallbacks(emailSuffixRefresh)
+        candidateState.value=candidateState.value.copy(emailSuffixCandidates=emptyList())
         closeToolPanel()
         // 输入会话结束：关闭残留的面板页面（表情/符号等 overlay），
         // 避免下次键盘弹出时在候选栏上方渲染上次的面板背景

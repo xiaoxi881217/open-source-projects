@@ -10,6 +10,7 @@ data class KeyboardCallbacks(
     val onKeyPressDown: ((String) -> Unit)? = null,
     val onKeyRelease: ((String) -> Unit)? = null,
     val onCandidateSelect: (Int) -> Unit,
+    val onEmailSuffixSelect: ((String) -> Unit)? = null,
     // 长按候选删除自造词：index 为候选栏显示索引（候选栏→服务层透传）
     val onCandidateDelete: ((Int) -> Unit)? = null,
     /**

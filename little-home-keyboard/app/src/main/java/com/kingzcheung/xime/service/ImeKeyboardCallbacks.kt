@@ -53,6 +53,9 @@ internal fun rememberImeKeyboardCallbacks(
             onKeyRelease = { key ->
                 service.feedbackManager.hapticFeedback(view, keyUp = true)
             },
+            onEmailSuffixSelect = { suffix ->
+                if(service.selectEmailSuffix(suffix))service.feedbackManager.performKeyPressEffect(view=view)
+            },
             onCandidateSelect = { index ->
                 service.keyRouter.selectCandidate(index)
             },

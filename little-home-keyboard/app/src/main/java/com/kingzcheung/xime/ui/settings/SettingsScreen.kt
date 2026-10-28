@@ -241,6 +241,7 @@ fun SettingsScreen(
                 onNavigateToHome = { navController.navigate(SettingsRoutes.HomeConnection) }
             )
         }
+        composable(SettingsRoutes.HomeEmailSuffixes) { HomeEmailSuffixContent { navController.popBackStack() } }
         composable(SettingsRoutes.HomeConnection) { HomeConnectionContent { navController.popBackStack() } }
         composable(SettingsRoutes.HomeDrafts) { HomeDraftPanel(onBack={if(!navController.popBackStack())navController.navigate(SettingsRoutes.ClipboardHistory)}) }
         composable(SettingsRoutes.ClipboardHistory) {
