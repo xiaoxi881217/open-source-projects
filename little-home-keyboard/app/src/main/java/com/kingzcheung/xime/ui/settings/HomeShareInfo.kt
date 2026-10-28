@@ -10,7 +10,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 
-internal const val HOME_ANDROID_SOURCE="https://github.com/xiaoxi881217/open-source-projects/tree/xiaojia-keyboard-20261060/little-home-keyboard"
+internal const val HOME_ANDROID_SOURCE="https://github.com/xiaoxi881217/open-source-projects/tree/xiaojia-keyboard-20261060-source-r1/little-home-keyboard"
 internal const val HOME_SERVER_SOURCE="https://github.com/xiaoxi881217/open-source-projects/tree/master/little-home-keyboard-server"
 
 @Composable internal fun HomeQuickHelp(onDismiss:()->Unit) {

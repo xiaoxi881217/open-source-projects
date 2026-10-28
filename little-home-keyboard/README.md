@@ -22,3 +22,5 @@ Gradle/CMake会下载指定版本的Boost、ONNX、knf等依赖，版本/来源/
 ## 服务器与许可
 
 配套服务器在同仓库 `../little-home-keyboard-server`，该目录不是安卓源码。本目录不含私人服务器配置、令牌、数据库、剪贴板、草稿或个人预设。版权及资源来源见THIRD_PARTY.md，原声明见app/src/main/assets/NOTICE.txt；各锁定上游源码仍保留各自许可证。GPL全文见LICENSE。
+
+SOURCE_MANIFEST.json的SHA256按Git保存的文件内容计算；Windows检出时Git可能转换换行，核对时请使用Git归档内容。
