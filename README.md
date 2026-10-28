@@ -4,6 +4,8 @@ This repository is a collection of independent open-source projects. Each projec
 
 ## Projects
 
+- [`little-home-keyboard`](./little-home-keyboard/) — 小家键盘安卓输入法源码，GPL-3.0，含固定版本原生依赖获取与构建说明。
+
 - [`little-home-keyboard-server`](./little-home-keyboard-server/) — 小家键盘的独立剪贴板接收器与网页装扮工作台，GPL-3.0；使用自己的服务器和凭证。
 
 - [`reading-room-mcp`](./reading-room-mcp/) — a small FastAPI reading application with MCP tools for book progress and notes.

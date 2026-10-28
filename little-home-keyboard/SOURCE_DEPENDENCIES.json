@@ -1,0 +1,37 @@
+[
+  {
+    "path": "app/src/main/jni/librime",
+    "url": "https://github.com/ximeiorg/librime.git",
+    "revision": "1141816890b0d675dc1223f79cb0bd328d7b3fdd"
+  },
+  {
+    "path": "app/src/main/jni/snappy",
+    "url": "https://github.com/google/snappy.git",
+    "revision": "6281a07b7e08629884ec93a89fea6e05c62e599c"
+  },
+  {
+    "path": "app/src/main/jni/librime-lua",
+    "url": "https://github.com/hchunhui/librime-lua.git",
+    "revision": "ec52e48ea18f11af37717a01c337f853215cf70b"
+  },
+  {
+    "path": "app/src/main/jni/librime-lua-deps",
+    "url": "https://github.com/hchunhui/librime-lua.git",
+    "revision": "fa40fadd8af1e5b1fbd55703ccbd54476956d74c"
+  },
+  {
+    "path": "app/src/main/jni/librime-octagram",
+    "url": "https://github.com/lotem/librime-octagram.git",
+    "revision": "dfcc15115788c828d9dd7b4bff68067d3ce2ffb8"
+  },
+  {
+    "path": "app/src/main/jni/librime-predict",
+    "url": "https://github.com/rime/librime-predict.git",
+    "revision": "920bd41ebf6f9bf6855d14fbe80212e54e749791"
+  },
+  {
+    "path": "app/src/main/assets/rime",
+    "url": "https://github.com/kingzcheung/rime-wubi.git",
+    "revision": "ae27544dd1ce4d795a3be1b791e9439d9612de15"
+  }
+]
