@@ -40,9 +40,11 @@ internal val HomeDraftEntrySaver=listSaver<HomeDraftEntry?,Any>(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun HomeDraftPanel(onBack:()->Unit,onInsert:((String)->Unit)?=null,embedded:Boolean=false) {
- if(onInsert!=null){HomeDraftContent(onBack,onInsert,embedded);return}
- Scaffold(contentWindowInsets=WindowInsets.safeDrawing){safe->
-  Box(Modifier.fillMaxSize().padding(safe).consumeWindowInsets(safe)){HomeDraftContent(onBack,null,false)}
+ Box(Modifier.fillMaxSize().homeBackdropCover(MaterialTheme.colorScheme.background)) {
+  if(onInsert!=null)HomeDraftContent(onBack,onInsert,embedded)
+  else Scaffold(containerColor=androidx.compose.ui.graphics.Color.Transparent,contentWindowInsets=WindowInsets.safeDrawing){safe->
+   Box(Modifier.fillMaxSize().padding(safe).consumeWindowInsets(safe)){HomeDraftContent(onBack,null,false)}
+  }
  }
 }
 
@@ -63,7 +65,7 @@ private fun HomeDraftContent(onBack:()->Unit,onInsert:((String)->Unit)?,embedded
   })
  }else{
   if(onInsert==null)BackHandler(chosen!=null){chosen=null}
-  Column(Modifier.fillMaxSize().homeBackdropCover(MaterialTheme.colorScheme.background).padding(horizontal=if(onInsert==null)20.dp else 10.dp,vertical=8.dp),verticalArrangement=Arrangement.spacedBy(if(onInsert==null)12.dp else 6.dp)){
+  Column(Modifier.fillMaxSize().padding(horizontal=if(onInsert==null)20.dp else 10.dp,vertical=8.dp),verticalArrangement=Arrangement.spacedBy(if(onInsert==null)12.dp else 6.dp)){
    if(!embedded || chosen!=null)Row(verticalAlignment=androidx.compose.ui.Alignment.CenterVertically){
     TextButton(onClick={if(chosen!=null)chosen=null else onBack()},modifier=Modifier.heightIn(min=48.dp)){Text(if(chosen!=null)"回到草稿" else "返回")}
     Column(Modifier.weight(1f)){Text("我的草稿",style=if(onInsert==null)MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleMedium);if(onInsert==null)Text("写下来，留到想说的时候",style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)}
