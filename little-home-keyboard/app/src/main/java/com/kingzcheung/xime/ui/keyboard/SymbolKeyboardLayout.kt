@@ -263,7 +263,7 @@ private fun SymbolButton(
     backgroundColor: Color,
 ) {
     HomeKeyStyleScope("symbol:"+symbol){
-        KeyButton(symbol,onClick,backgroundColor=backgroundColor,textColor=textColor,modifier=modifier.aspectRatio(1f),fontSize=16.sp)
+        KeyButton(symbol,onClick,backgroundColor=backgroundColor,textColor=textColor,modifier=modifier.aspectRatio(1f),fontSize=16.sp,scrollableContainer=true)
     }
 }
 

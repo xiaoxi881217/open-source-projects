@@ -3,6 +3,7 @@ package com.kingzcheung.xime.ui.keyboard
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -201,6 +202,8 @@ fun KeyButton(
     a11yDescription: String? = null,
     /** TalkBack 状态播报（如 Shift 的"大写锁定"） */
     a11yState: String? = null,
+    /** 滚动面板只响应标准点按，不接管拖拽或在拖拽结束补点。 */
+    scrollableContainer: Boolean = false,
 ) {
     val backgroundColor = homeKeyBackground(backgroundColor)
     val homeShadows = homeHasCustomShadows()
@@ -251,7 +254,8 @@ fun KeyButton(
             modifier = modifier
                 .fillMaxHeight()
                 .fillMaxWidth()
-                .pointerInput(Unit) {
+                .pointerInput(scrollableContainer) {
+                    if(scrollableContainer)return@pointerInput
                     detectDragGestures(
                         onDragStart = {
                             dragActivated = true
@@ -332,7 +336,22 @@ fun KeyButton(
                         }
                     )
                 }
-                .pointerInput(currentOnLongClick != null) {
+                .pointerInput(currentOnLongClick != null, scrollableContainer) {
+                    if(scrollableContainer) {
+                        detectTapGestures(
+                            onPress={
+                                isPressed=true
+                                onPress?.invoke()
+                                try { tryAwaitRelease() } finally { isPressed=false;currentOnRelease?.invoke() }
+                            },
+                            onTap={currentOnClick()},
+                            onLongPress=currentOnLongClick?.let { action -> { _:Offset ->
+                                view.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
+                                action()
+                            } }
+                        )
+                        return@pointerInput
+                    }
                     if (currentOnLongClick == null) {
                         // 容差点击：不因指针漂出键格（isOutOfBounds）而取消，见 detectTolerantTapGestures
                         detectTolerantTapGestures(
