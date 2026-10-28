@@ -1,0 +1,24 @@
+services:
+  receiver:
+    build: .
+    env_file: .env
+    volumes:
+      - inbox-data:/data
+    restart: unless-stopped
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+  gateway:
+    image: caddy:2
+    ports: ["80:80", "443:443"]
+    environment:
+      INBOX_DOMAIN: ${INBOX_DOMAIN:?请先配置域名}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./web:/srv/web:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    restart: unless-stopped
+volumes:
+  inbox-data:
+  caddy-data:
+  caddy-config:

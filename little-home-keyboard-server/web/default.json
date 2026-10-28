@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "name": "我的软萌键盘",
+  "light": {
+    "background": 4294964213,
+    "gradientEnd": 4294960107,
+    "key": 4294967295,
+    "special": 4294235359,
+    "text": 4282989634,
+    "candidate": 4282989634,
+    "accent": 4289550712
+  },
+  "dark": {
+    "background": 4280886314,
+    "gradientEnd": 4282067510,
+    "key": 4282727750,
+    "special": 4285024342,
+    "text": 4294437616,
+    "candidate": 4294437616,
+    "accent": 4293964748
+  },
+  "gradient": false,
+  "gradientAngle": 90,
+  "cornerRadius": 12,
+  "spacingX": 3,
+  "spacingY": 4,
+  "candidateTextSize": 19,
+  "keys": {},
+  "animationsEnabled": false,
+  "pressPopupEnabled": false
+}

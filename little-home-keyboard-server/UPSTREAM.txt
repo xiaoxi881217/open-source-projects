@@ -1,0 +1,4 @@
+Receiver source: our-little-home/backend/family_clipboard.py
+Source SHA256: 64cb828ae1178eabf5cb12954e6dfcb019d80b34beb100983acc1dbfaff9f106
+Packaging change: replace personal display name in untrusted-data notice with generic inbox wording.
+No production database/configuration included.

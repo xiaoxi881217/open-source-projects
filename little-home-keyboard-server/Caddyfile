@@ -1,0 +1,15 @@
+{$INBOX_DOMAIN} {
+  handle /health {
+    reverse_proxy receiver:8765
+  }
+  handle /api/our-home/clipboard/* {
+    reverse_proxy receiver:8765
+  }
+  handle {
+    root * /srv/web
+    header Cache-Control "no-store"
+    header Referrer-Policy "no-referrer"
+    header X-Content-Type-Options "nosniff"
+    file_server
+  }
+}
