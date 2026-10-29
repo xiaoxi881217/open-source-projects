@@ -19,6 +19,7 @@ import com.kingzcheung.xime.appearance.HomeKeyStyle
 import com.kingzcheung.xime.appearance.HomePresetStore
 import com.kingzcheung.xime.appearance.HomeVisualPreset
 
+internal val LocalHomeWidthWeighted=staticCompositionLocalOf{false}
 internal val LocalHomePreset=staticCompositionLocalOf<HomeVisualPreset?>{null}
 val LocalHomeDarkAppearance = staticCompositionLocalOf { false }
 internal val LocalHomeAnimationEnabled = staticCompositionLocalOf { false }

@@ -1260,8 +1260,8 @@ internal fun HomeT9Grid(layout:com.kingzcheung.xime.settings.KeyboardT9LayoutCon
   Column(Modifier.fillMaxHeight().weight(.8f),verticalArrangement=Arrangement.spacedBy(homeSectionSpacing(if(compact)2f else 4f).dp)){layout.left.forEach{cell(it,Modifier.weight(weight(it)))}}
   val preset=LocalHomePreset.current
   val padding=LocalKeyVisualPadding.current
-  CompositionLocalProvider(LocalKeyVisualPadding provides if(preset==null)padding else PaddingValues(horizontal=preset.spacingX.dp)) {
-   HomeKeyboardRows("t9",layout.rows.size,Modifier.fillMaxHeight().weight(3.4f)){index,m->Row(m.fillMaxWidth()){layout.rows[index].forEach{cell(it,Modifier.weight(weight(it)))}}}
+  CompositionLocalProvider(LocalHomeWidthWeighted provides true,LocalKeyVisualPadding provides if(preset==null)padding else PaddingValues(horizontal=preset.spacingX.dp)) {
+   HomeKeyboardRows("t9",layout.rows.size,Modifier.fillMaxHeight().weight(3.4f)){index,m->Row(m.fillMaxWidth()){layout.rows[index].forEach{cell(it,Modifier.weight(preset?.keyWidth("t9:$it",weight(it))?:weight(it)))}}}
   }
   Column(Modifier.fillMaxHeight().weight(.8f),verticalArrangement=Arrangement.spacedBy(homeSectionSpacing(0f).dp)){layout.right.forEach{cell(it,Modifier.weight(weight(it)))}}
  }

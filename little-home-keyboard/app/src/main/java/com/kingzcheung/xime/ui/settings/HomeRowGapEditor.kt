@@ -11,12 +11,12 @@ import com.kingzcheung.xime.appearance.HomeVisualPreset
     HomeActionButton(onClick={expanded=!expanded}){Text(if(expanded)"收起逐行调整" else "逐行调整 · 第1—2行等")}
     if(expanded)Column(verticalArrangement=Arrangement.spacedBy(6.dp)) {
         repeat((rows-1).coerceIn(0,4)){index->
-            HomeValueSlider("第${index+1}行与第${index+2}行",preset.rowGap(layout,index),0f..20f,preset.spacingY*2f,compact=true){value->
+            HomeValueSlider("第${index+1}行与第${index+2}行",preset.rowGap(layout,index),0f..20f,preset.spacingY*2f,compact=true,fineNearZero=true){value->
                 val gaps=List((rows-1).coerceIn(0,4)){preset.rowGap(layout,it)}.toMutableList();gaps[index]=value
                 onChange(preset.copy(rowGaps=preset.rowGaps+(layout to gaps)))
             }
         }
         HomeActionButton(onClick={onChange(preset.copy(rowGaps=preset.rowGaps-layout))}){Text("这些行跟随整体间距")}
-        Text("预览和键盘共用真实间隔；矮屏会收紧过大的间隔，为按键留出空间。")
+        Text("最小0；轻推滑条可细调，点数值可精确输入。调整整体行缝会恢复各行跟随。")
     }
 }

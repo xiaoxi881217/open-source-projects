@@ -39,6 +39,8 @@ internal fun HomePerKeyEditor(preset: HomeVisualPreset, dark: Boolean, onChange:
     val style = preset.keys[sourceId] ?: HomeKeyStyle()
     var stickerIndex by remember(sourceId){mutableIntStateOf(0)}
     val activeSticker=stickerIndex.coerceIn(0,(style.stickers().size-1).coerceAtLeast(0))
+    val weightedWidth=layout=="qwerty" || layout=="t9" && selected in KeysConfigHelper.getT9Layout().rows.flatten().map{HomeKeyIds.token(it)}
+    val maxWidth=if(weightedWidth)2f else 1f
     val palette = if (dark) preset.dark else preset.light
     var colorEdit by remember { mutableStateOf<HomeStyleProperty?>(null) }
     var sync by remember { mutableStateOf<HomeStyleProperty?>(null) }
@@ -52,9 +54,15 @@ internal fun HomePerKeyEditor(preset: HomeVisualPreset, dark: Boolean, onChange:
             HomeActionButton(onClick={fineGestures=!fineGestures}){Text(if(fineGestures)"收起微调" else "手势微调")}
         }
         if(fineGestures)HomeSingleKeyPreview(preset, sourceId, title(selected), dark,
-            onStickerChange={ set(style.withSticker(activeSticker,it)) },onLabelChange=if(layout=="toolbar")null else {next->set(style.copy(labelOffsetX=next.labelOffsetX,labelOffsetY=next.labelOffsetY,labelFontSize=next.labelFontSize))},
-            onHintChange=if(layout=="toolbar")null else {next->set(style.copy(hintOffsetX=next.hintOffsetX,hintOffsetY=next.hintOffsetY,hintFontSize=next.hintFontSize))},initialMode=if(hintGesture)"hint" else if(stickerGesture)"sticker" else "press",glyph=if(glyph!=null)({glyph(selected)})else null,stickerIndex=activeSticker)
+            onStickerChange={ set(style.withSticker(activeSticker,it)) },onSizeChange=if(layout=="toolbar")null else {next->set(style.copy(widthScale=next.widthScale.coerceAtMost(maxWidth),heightScale=next.heightScale))},onLabelChange=if(layout=="toolbar")null else {next->set(style.copy(labelOffsetX=next.labelOffsetX,labelOffsetY=next.labelOffsetY,labelFontSize=next.labelFontSize))},
+            onHintChange=if(layout=="toolbar")null else {next->set(style.copy(hintOffsetX=next.hintOffsetX,hintOffsetY=next.hintOffsetY,hintFontSize=next.hintFontSize))},initialMode=if(hintGesture)"hint" else if(stickerGesture)"sticker" else "press",glyph=if(glyph!=null)({glyph(selected)})else null,stickerIndex=activeSticker,maxKeyWidth=maxWidth)
         if(section in listOf("all","key")){
+        if(layout!="toolbar")HomePaperGroup("这颗键的大小") {
+            HomeValueSlider("宽度比例",style.widthScale.coerceAtMost(maxWidth),.5f..maxWidth,1f,onSync={sync=HomeStyleProperty.WIDTH}){set(style.copy(widthScale=it))}
+            HomeValueSlider("键帽高度",style.heightScale,.4f..1f,1f,onSync={sync=HomeStyleProperty.HEIGHT}){set(style.copy(heightScale=it))}
+            HomeSyncAction("同步宽度与键帽高度",{sync=HomeStyleProperty.SIZE},caption="尺寸")
+            Text("主键区宽度会重排行内键位；侧栏宽度与所有键帽高度最多填满槽位，收小时触摸槽位保留。",style=MaterialTheme.typography.bodySmall)
+        }
         HomeHintEditor(style,palette,dark,::set,{hintGesture=true;stickerGesture=false;fineGestures=true},{sync=it})
         FlowRow(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
             HomeKeyShape.entries.forEach{kind->HomeChoiceChip((style.shape?:preset.keyShape)==kind,{set(style.copy(shape=kind))},label={Text(kind.label)})}

@@ -53,7 +53,11 @@ data class HomeKeyStyle(
     val iconSize:Float=24f,
     val wallpaper:HomeWallpaper?=null,
     val extraStickers: List<HomeSticker> = emptyList(),
+    val widthScale:Float=1f,
+    val heightScale:Float=1f,
 ) {
+    fun resizedKey(zoom:Float):HomeKeyStyle = if(!zoom.isFinite() || zoom<=0f)this else
+        copy(widthScale=(widthScale*zoom).coerceIn(.5f,2f),heightScale=(heightScale*zoom).coerceIn(.4f,1f))
     fun stickers():List<HomeSticker> = listOfNotNull(sticker)+extraStickers
     fun stickerAt(index:Int):HomeSticker? = stickers().getOrNull(index)
     fun withStickers(values:List<HomeSticker>):HomeKeyStyle {
@@ -91,6 +95,7 @@ data class HomeKeyStyle(
         stickers().forEach{it.validate()}
         border?.validate()
         wallpaper?.validate()
+        require(widthScale.isFinite() && widthScale in .5f..2f && heightScale.isFinite() && heightScale in .4f..1f){"按键尺寸超出安全范围"}
         require(textOpacity.isFinite() && textOpacity in 0f..1f){"主文字不透明度超出范围"}
         require(iconSize.isFinite() && iconSize in 12f..40f){"图标大小超出范围"}
         require(iconAsset==null || iconAsset in HomeSticker.BUILTINS || iconAsset.matches(Regex("image:[a-f0-9]{64}"))){"图标来源不合适"}
@@ -108,7 +113,7 @@ data class HomeKeyStyle(
 }
 
 enum class HomeStyleProperty(val label: String) {
-    SHAPE("按键形状"), BORDER("整套边框"), BORDER_KIND("边框线型"), BORDER_WIDTH("边框粗细"), BORDER_OPACITY("边框不透明度"), BORDER_LIGHT("浅色边框颜色"), BORDER_DARK("深色边框颜色"),
+    SIZE("按键尺寸"), WIDTH("按键宽度"), HEIGHT("键帽高度"), SHAPE("按键形状"), BORDER("整套边框"), BORDER_KIND("边框线型"), BORDER_WIDTH("边框粗细"), BORDER_OPACITY("边框不透明度"), BORDER_LIGHT("浅色边框颜色"), BORDER_DARK("深色边框颜色"),
     HINT_ALL("上方小字整套样式"), HINT_POSITION("小字位置"), HINT_X("小字横向位置"), HINT_Y("小字纵向位置"), HINT_FONT_SIZE("小字字号"), HINT_LIGHT("浅色小字颜色"), HINT_DARK("深色小字颜色"), HINT_OPACITY("小字不透明度"), HINT_VISIBLE("小字显示开关"),
     ALL("整套已支持的样式"), TEXT_OPACITY("主文字不透明度"), BACKGROUND_LIGHT("浅色按键颜色"), BACKGROUND_DARK("深色按键颜色"),
     TEXT_LIGHT("浅色文字颜色"), TEXT_DARK("深色文字颜色"), KEY_OPACITY("键帽底色不透明度"), FROST("键帽磨砂度"), LABEL_POSITION("文字位置"), LABEL_X("文字横向位置"), LABEL_Y("文字纵向位置"), LABEL_FONT_SIZE("文字字号"), CORNER_RADIUS("按键圆角"),
@@ -174,6 +179,8 @@ data class HomeVisualPreset(
     fun styles():List<HomeKeyStyle> = keys.values.toList()+listOfNotNull(panelStyle)
     fun wallpapers():List<HomeWallpaper> = listOfNotNull(wallpaper)+styles().mapNotNull{it.wallpaper}
     fun iconAssets():List<String> = styles().mapNotNull{it.iconAsset}
+    fun withGlobalRowGap(gap:Float):HomeVisualPreset=copy(spacingY=gap/2f,rowGaps=emptyMap()).also{it.validate()}
+    fun keyWidth(id:String,base:Float):Float = base*(styleFor(HomeKeyIds.normalize(id))?.widthScale?:1f)
     fun rowGap(layout:String,index:Int):Float = rowGaps[layout]?.getOrNull(index)?:spacingY*2f
     fun panelBackground():HomeVisualPreset=copy(floatingStickers=emptyList(),frameBorder=HomeBorder())
 
@@ -204,6 +211,9 @@ data class HomeVisualPreset(
             val previous = updated[target] ?: HomeKeyStyle()
             updated[target] = when (property) {
                 HomeStyleProperty.ALL -> source
+                HomeStyleProperty.SIZE -> previous.copy(widthScale=source.widthScale,heightScale=source.heightScale)
+                HomeStyleProperty.WIDTH -> previous.copy(widthScale=source.widthScale)
+                HomeStyleProperty.HEIGHT -> previous.copy(heightScale=source.heightScale)
                 HomeStyleProperty.TEXT_OPACITY -> previous.copy(textOpacity=source.textOpacity)
                 HomeStyleProperty.SHAPE -> previous.copy(shape=source.shape?:keyShape)
                 HomeStyleProperty.BORDER -> previous.copy(border=source.border?:keyBorder)

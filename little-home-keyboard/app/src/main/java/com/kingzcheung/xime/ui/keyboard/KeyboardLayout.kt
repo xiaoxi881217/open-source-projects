@@ -818,7 +818,8 @@ internal fun QwertyRow(
     modifier: Modifier = Modifier,
     reserveVerticalInsets:Boolean=true,
 ) {
-    val hasPreset=LocalHomePreset.current!=null
+    val appearance=LocalHomePreset.current
+    val hasPreset=appearance!=null
     val rowInset=LocalHomePreset.current?.spacingY?.dp?.takeIf{reserveVerticalInsets}
     val keyPadding=LocalKeyVisualPadding.current
     val direction=androidx.compose.ui.platform.LocalLayoutDirection.current
@@ -826,7 +827,7 @@ internal fun QwertyRow(
     val insidePadding=if(hasPreset)PaddingValues(
         start=keyPadding.calculateStartPadding(direction),end=keyPadding.calculateEndPadding(direction)
     ) else keyPadding
-    CompositionLocalProvider(LocalKeyVisualPadding provides insidePadding) {
+    CompositionLocalProvider(LocalHomeWidthWeighted provides true,LocalKeyVisualPadding provides insidePadding) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -841,7 +842,7 @@ internal fun QwertyRow(
                     id = id,
                     env = env,
                     modifier = Modifier
-                        .weight(functionKeyWidth(id, env.isAsciiMode))
+                        .weight(appearance?.keyWidth("${env.section}:$id",functionKeyWidth(id,env.isAsciiMode))?:functionKeyWidth(id,env.isAsciiMode))
                         .fillMaxHeight(),
                 )
                 i++
@@ -849,7 +850,7 @@ internal fun QwertyRow(
                 var j = i
                 while (j < ids.size && ids[j] !in KeysConfigHelper.FUNCTION_KEY_IDS) j++
                 val segment = ids.subList(i, j)
-                val segWeights = segment.map { letterKeyWidth(it, env.isAsciiMode) }
+                val segWeights = segment.map { appearance?.keyWidth("${env.section}:${it.lowercase(java.util.Locale.ROOT)}",letterKeyWidth(it,env.isAsciiMode))?:letterKeyWidth(it,env.isAsciiMode) }
                 val segModifier = Modifier
                     .weight(segWeights.sum())
                     .fillMaxHeight()

@@ -26,14 +26,14 @@ import com.kingzcheung.xime.settings.DisplayMode
 @Composable
 internal fun HomeSingleKeyPreview(preset: HomeVisualPreset,id: String,label: String,dark: Boolean,
     onStickerChange: ((HomeSticker)->Unit)?=null,onLabelChange: ((HomeKeyStyle)->Unit)?=null,
-    onHintChange: ((HomeKeyStyle)->Unit)?=null,initialMode:String="press",glyph:(@Composable ()->Unit)?=null,stickerIndex:Int=0) {
+    onHintChange: ((HomeKeyStyle)->Unit)?=null,onSizeChange:((HomeKeyStyle)->Unit)?=null,initialMode:String="press",glyph:(@Composable ()->Unit)?=null,stickerIndex:Int=0,maxKeyWidth:Float=2f) {
     val palette=if(dark)preset.dark else preset.light;val special=!id.startsWith("toolbar:")&&id.substringAfter(':').length>1
     val previewWidth=if(special)100.dp else 72.dp;val previewHeight=if(special)58.dp else 72.dp
     val interactions=remember(id){MutableInteractionSource()};val pressed by interactions.collectIsPressedAsState()
     var mode by remember(id,initialMode){mutableStateOf(initialMode)};var gesture by remember(id){mutableStateOf<HomeKeyStyle?>(null)}
     val current=preset.keys[id]?:HomeKeyStyle();val latestStyle by rememberUpdatedState(current)
     val applySticker by rememberUpdatedState(onStickerChange);val applyLabel by rememberUpdatedState(onLabelChange)
-    val applyHint by rememberUpdatedState(onHintChange)
+    val applyHint by rememberUpdatedState(onHintChange);val applySize by rememberUpdatedState(onSizeChange)
     val hint=if(id.startsWith("qwerty:") && KeysConfigHelper.getSwipeUpDisplay(id.substringAfter(':'),false)!=DisplayMode.BUBBLE)
         KeysConfigHelper.getSwipeUpLabel(id.substringAfter(':'),false) else null
     val display=gesture?.let { preset.copy(keys=preset.keys+(id to it)) }?:preset
@@ -45,13 +45,13 @@ internal fun HomeSingleKeyPreview(preset: HomeVisualPreset,id: String,label: Str
             try {
                 do {
                     val event=awaitPointerEvent();val pan=event.calculatePan()
-                    draft=if(mode=="hint")draft.movedHint(pan.x/previewWidth.toPx(),pan.y/previewHeight.toPx()).resizedHint(event.calculateZoom()) else if(mode=="label")draft.movedLabel(pan.x/previewWidth.toPx(),pan.y/previewHeight.toPx()).resizedLabel(event.calculateZoom()) else
+                    draft=if(mode=="size")draft.resizedKey(event.calculateZoom()).let{it.copy(widthScale=it.widthScale.coerceAtMost(maxKeyWidth))} else if(mode=="hint")draft.movedHint(pan.x/previewWidth.toPx(),pan.y/previewHeight.toPx()).resizedHint(event.calculateZoom()) else if(mode=="label")draft.movedLabel(pan.x/previewWidth.toPx(),pan.y/previewHeight.toPx()).resizedLabel(event.calculateZoom()) else
                         draft.withSticker(stickerIndex,draft.stickerAt(stickerIndex)!!.transformed(pan.x/previewWidth.toPx(),pan.y/previewHeight.toPx(),event.calculateZoom(),event.calculateRotation()))
                     gesture=draft;event.changes.forEach { it.consume() }
                 }while(event.changes.any { it.pressed })
                 completed=true
             } finally {
-                if(completed && draft!=original){if(mode=="hint")applyHint?.invoke(draft) else if(mode=="label")applyLabel?.invoke(draft) else draft.stickerAt(stickerIndex)?.let { applySticker?.invoke(it) }}
+                if(completed && draft!=original){if(mode=="size")applySize?.invoke(draft) else if(mode=="hint")applyHint?.invoke(draft) else if(mode=="label")applyLabel?.invoke(draft) else draft.stickerAt(stickerIndex)?.let { applySticker?.invoke(it) }}
                 gesture=null
             }
         }
@@ -59,6 +59,7 @@ internal fun HomeSingleKeyPreview(preset: HomeVisualPreset,id: String,label: Str
     Column {
         FlowRow(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
             HomeChoiceChip(mode=="press",{mode="press"},label={Text("试按")})
+            if(onSizeChange!=null)HomeChoiceChip(mode=="size",{mode="size"},label={Text("按键大小")})
             if(onLabelChange!=null)HomeChoiceChip(mode=="label",{mode="label"},label={Text("移动文字")})
             if(onHintChange!=null)HomeChoiceChip(mode=="hint",{mode="hint"},label={Text("移动小字")})
             if(current.stickerAt(stickerIndex)!=null && onStickerChange!=null)HomeChoiceChip(mode=="sticker",{mode="sticker"},label={Text("摆放贴纸")})
@@ -66,10 +67,10 @@ internal fun HomeSingleKeyPreview(preset: HomeVisualPreset,id: String,label: Str
         HomeStickerHost(Modifier.fillMaxWidth().height(150.dp).clipToBounds().then(gestures)) { previewModifier ->
             HomeBackdropHost(display,dark,previewModifier) {
             Box(Modifier.fillMaxSize(),contentAlignment=Alignment.Center) {
-                CompositionLocalProvider(LocalKeyCornerRadius provides preset.cornerRadius.dp) {
+                CompositionLocalProvider(LocalHomeWidthWeighted provides true,LocalKeyCornerRadius provides preset.cornerRadius.dp) {
                     HomeKeyStyleScope(id,display,dark) {
                         val background=homeKeyBackground(Color(if(special)palette.special else palette.key));val text=homeKeyText(Color(palette.text))
-                        Box(Modifier.padding(20.dp).size(previewWidth,previewHeight).homeKeyEffects(pressed)
+                        Box(Modifier.padding(20.dp).size(previewWidth*(gesture?:current).widthScale,previewHeight).homeKeyEffects(pressed)
                             .clip(RoundedCornerShape(LocalKeyCornerRadius.current)).homeKeyFrost().homeKeyFace(background).homeKeyInnerShadows()
                             .then(if(mode=="press")Modifier.clickable(interactionSource=interactions,indication=null){} else Modifier),contentAlignment=Alignment.Center) {
                             if(glyph!=null)glyph() else Text(label,color=text,fontSize=homeKeyFontSize(18.sp),modifier=Modifier.homeKeyLabelPosition())
@@ -80,6 +81,6 @@ internal fun HomeSingleKeyPreview(preset: HomeVisualPreset,id: String,label: Str
             }
         }
         }
-        Text(when(mode){"hint"->if(hint.isNullOrEmpty())"这颗键目前没有上方小字，可换一颗字母键。" else "单指移动小字，双指捏合调字号；松手合并一次修改。";"label"->"单指移动文字，双指捏合调字号；松手合并一次修改。";"sticker"->"单指移动，双指缩放、旋转；松手合并一次修改。";else->"先试按，或切换到移动文字、摆放贴纸。"},style=MaterialTheme.typography.bodySmall)
+        Text(when(mode){"size"->"双指捏合调整大小；宽度重排行内键位，高度最多填满所在行。";"hint"->if(hint.isNullOrEmpty())"这颗键目前没有上方小字，可换一颗字母键。" else "单指移动小字，双指捏合调字号；松手合并一次修改。";"label"->"单指移动文字，双指捏合调字号；松手合并一次修改。";"sticker"->"单指移动，双指缩放、旋转；松手合并一次修改。";else->"先试按，或切换到移动文字、摆放贴纸。"},style=MaterialTheme.typography.bodySmall)
     }
 }

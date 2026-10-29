@@ -23,6 +23,31 @@ import java.util.concurrent.atomic.AtomicInteger
 /** 合成布局回归；编译与执行结果分别记录，不操作本人手机。 */
 class HomeAdvancedVisualGestureTest {
     @get:Rule val compose=createComposeRule()
+    @Test fun resizedKeysKeepDisjointSlotsAndCenteredHeight() {
+        val left=AtomicInteger();val right=AtomicInteger();var density=1f
+        val preset=HomeVisualPreset(keys=mapOf("qwerty:q" to HomeKeyStyle(widthScale=2f,heightScale=.5f)))
+        compose.setContent { MaterialTheme {
+            density=LocalDensity.current.density
+            CompositionLocalProvider(LocalHomePreset provides preset,LocalHomeWidthWeighted provides true) {
+                Row(Modifier.size(240.dp,100.dp)) {
+                    listOf("q","w").forEach { id -> HomeKeyStyleScope("qwerty:$id") {
+                        Box(Modifier.weight(preset.keyWidth("qwerty:$id",1f)).fillMaxHeight().testTag("slot$id")
+                            .clickable{if(id=="q")left.incrementAndGet() else right.incrementAndGet()}.homeKeyEffects(false)) {
+                            Box(Modifier.fillMaxSize().testTag("face$id"))
+                        }
+                    } }
+                }
+            }
+        } }
+        fun bounds(tag:String)=compose.onNodeWithTag(tag,useUnmergedTree=true).fetchSemanticsNode().boundsInRoot
+        val q=bounds("slotq");val w=bounds("slotw");val face=bounds("faceq")
+        assertEquals(160f*density,q.width,.1f);assertEquals(80f*density,w.width,.1f)
+        assertEquals(q.right,w.left,.1f);assertEquals(50f*density,face.height,.1f)
+        assertEquals(q.center.y,face.center.y,.1f)
+        compose.onNodeWithTag("slotw").performTouchInput{click()}
+        assertEquals(0,left.get());assertEquals(1,right.get())
+        compose.onNodeWithTag("slotq").performTouchInput{click()};assertEquals(1,left.get())
+    }
     @Test fun rowSpacingIsAnActualGapAndRowTapsStillWork() {
         val clicks=AtomicInteger();var density=1f
         val preset=HomeVisualPreset(spacingY=0f,rowGaps=mapOf("qwerty" to listOf(12f)))

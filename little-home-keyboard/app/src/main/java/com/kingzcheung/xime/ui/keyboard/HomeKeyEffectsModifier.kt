@@ -14,6 +14,8 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.layout
+import kotlin.math.roundToInt
 import androidx.compose.ui.draw.innerShadow
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.geometry.Offset
@@ -41,7 +43,20 @@ internal fun Modifier.homeKeyEffects(isPressed: Boolean): Modifier {
     val pressState=LocalHomeKeyPressed.current
     SideEffect { pressState?.value=isPressed }
     val keySize = LocalHomeKeySize.current
-    val sized = previewed.onSizeChanged { keySize?.value=it }
+    val height=style.heightScale
+    val width=if(LocalHomeWidthWeighted.current)1f else style.widthScale.coerceAtMost(1f)
+    val resized=if(height==1f && width==1f)previewed else previewed.layout { measurable,constraints ->
+        val outerHeight=if(constraints.hasBoundedHeight)constraints.maxHeight else null
+        val outerWidth=if(constraints.hasBoundedWidth)constraints.maxWidth else null
+        val childHeight=outerHeight?.let{(it*height).roundToInt().coerceIn(0,it)}
+        val childWidth=outerWidth?.let{(it*width).roundToInt().coerceIn(0,it)}
+        val child=measurable.measure(constraints.copy(
+            minHeight=childHeight?:constraints.minHeight,maxHeight=childHeight?:constraints.maxHeight,
+            minWidth=childWidth?:constraints.minWidth,maxWidth=childWidth?:constraints.maxWidth))
+        val w=outerWidth?:child.width;val h=outerHeight?:child.height
+        layout(w,h){child.placeRelative((w-child.width)/2,(h-child.height)/2)}
+    }
+    val sized = resized.onSizeChanged { keySize?.value=it }
     val radius = LocalKeyCornerRadius.current
     val faceShape=homeFaceShape()
     val shape = remember(style.shadowShape, radius,faceShape) {

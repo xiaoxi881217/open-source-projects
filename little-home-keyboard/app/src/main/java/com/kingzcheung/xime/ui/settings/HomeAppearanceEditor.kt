@@ -217,7 +217,7 @@ private fun HomeAppearanceEditorContent(onBack: () -> Unit, onApplied: () -> Uni
                         Column(verticalArrangement=Arrangement.spacedBy(0.dp)) {
                             HomeValueSlider("横向缝隙",draft.spacingX*2f,0f..8f,6f,compact=true){change(draft.copy(spacingX=it/2f))}
                             HomePaperRule()
-                            HomeValueSlider("整体行缝（逐行设置优先）",draft.spacingY*2f,0f..16f,8f,compact=true){change(draft.copy(spacingY=it/2f))}
+                            HomeValueSlider("整体行缝",draft.spacingY*2f,0f..16f,8f,compact=true,fineNearZero=true){change(draft.withGlobalRowGap(it))}
                             HomeRowGapEditor(draft,if(previewState.layout==KeyboardLayoutState.T9Pinyin)"t9" else "qwerty",
                                 if(previewState.layout==KeyboardLayoutState.T9Pinyin)KeysConfigHelper.getT9Layout().rows.size else normalizeQwertyRows(KeysConfigHelper.getRowsLayout(previewState.layout==KeyboardLayoutState.English).rows).size,::change)
                             HomePaperRule()
@@ -327,7 +327,10 @@ private fun HomeAppearanceEditorContent(onBack: () -> Unit, onApplied: () -> Uni
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun HomeValueSlider(label:String,value:Float,range:ClosedFloatingPointRange<Float>,initial:Float,compact:Boolean=false,onSync:(()->Unit)?=null,onChange:(Float)->Unit){
+internal fun HomeValueSlider(label:String,value:Float,range:ClosedFloatingPointRange<Float>,initial:Float,compact:Boolean=false,onSync:(()->Unit)?=null,fineNearZero:Boolean=false,onChange:(Float)->Unit){
+    val sliderRange=if(fineNearZero)0f..1f else range
+    val sliderValue=if(fineNearZero)kotlin.math.sqrt(((value-range.start)/(range.endInclusive-range.start)).coerceIn(0f,1f)) else value
+    val sliderChange:(Float)->Unit={position->onChange(if(fineNearZero)range.start+position*position*(range.endInclusive-range.start) else position)}
     var precise by remember { mutableStateOf(false) }
     var exact by remember(value){mutableStateOf("%.3f".format(java.util.Locale.ROOT,value).trimEnd('0').trimEnd('.'))}
     val parsed=exact.toFloatOrNull()?.takeIf{it.isFinite()&&it in range}
@@ -338,10 +341,10 @@ internal fun HomeValueSlider(label:String,value:Float,range:ClosedFloatingPointR
             HomeIconAction(onClick={onChange(initial)},modifier=Modifier.size(36.dp)){Icon(androidx.compose.material.icons.Icons.Default.Refresh,"${label}恢复默认",Modifier.size(16.dp))}
             HomeSyncAction("同步$label",onSync)
         }
-        Slider(value,onChange,valueRange=range,modifier=Modifier.fillMaxWidth())
+        Slider(sliderValue,sliderChange,valueRange=sliderRange,modifier=Modifier.fillMaxWidth())
     } else Row(Modifier.fillMaxWidth().heightIn(min=if(compact)44.dp else 52.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(4.dp)){
         Text(label,Modifier.weight(.4f),fontSize=12.sp,maxLines=2,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-        Slider(value,onChange,valueRange=range,modifier=Modifier.weight(.6f),
+        Slider(sliderValue,sliderChange,valueRange=sliderRange,modifier=Modifier.weight(.6f),
             thumb={Spacer(Modifier.size(12.dp).background(MaterialTheme.colorScheme.primary,androidx.compose.foundation.shape.CircleShape))},
             track={state->SliderDefaults.Track(state,modifier=Modifier.height(3.dp),thumbTrackGapSize=0.dp,drawStopIndicator=null)})
         HomeActionButton(onClick={precise=true},contentPadding=PaddingValues(horizontal=2.dp),modifier=Modifier.widthIn(min=40.dp)){
