@@ -184,11 +184,10 @@ class ClipboardManager private constructor(private val context: Context) {
         }
     }
 
-    /** 敏感剪贴板判定（API 33+ 由系统标记 `ClipDescription.EXTRA_IS_SENSITIVE`）。 */
+    /** 系统及本App写入的敏感标记；旧版Android也能携带这项extras。 */
     private fun isSensitiveClip(description: ClipDescription): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return false
         return try {
-            description.extras?.getBoolean(ClipDescription.EXTRA_IS_SENSITIVE) == true
+            description.extras?.getBoolean("android.content.extra.IS_SENSITIVE") == true
         } catch (e: Exception) {
             false
         }
@@ -658,6 +657,12 @@ class ClipboardManager private constructor(private val context: Context) {
 
     /** 系统窗口可读时补取当前一条；不能恢复系统未提供的历史。 */
     fun refreshFromSystemClipboard() { readClipboard(retries = 0) }
+
+    /** 显式保存本机生成的分享内容，等落库后返回；不经过网络同步事件。 */
+    suspend fun saveLocalText(text: String) {
+        require(ClipboardCapturePolicy.rejectLocal(text) == null) { "文字太长，请导出TXT分享" }
+        captureMutex.withLock { dao.upsertAndTrim(text, System.currentTimeMillis(), MAX_ITEMS) }
+    }
 
     fun addItem(text: String, sensitive: Boolean = false, copiedAt: Long? = null, canSync: Boolean = true) {
         if (ClipboardCapturePolicy.rejectLocal(text) != null) return

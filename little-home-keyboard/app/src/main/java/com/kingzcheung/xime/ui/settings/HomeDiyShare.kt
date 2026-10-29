@@ -17,9 +17,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-@Composable internal fun HomeDiyShareActions(preset:HomeVisualPreset,busy:Boolean,setBusy:(Boolean)->Unit,status:(String)->Unit,openImport:()->Unit,openFileImport:()->Unit) {
+@Composable internal fun HomeDiyShareActions(preset:HomeVisualPreset,busy:Boolean,setBusy:(Boolean)->Unit,openImport:()->Unit,openFileImport:()->Unit) {
     val context=LocalContext.current
     val scope=rememberCoroutineScope()
+    var message by remember{mutableStateOf("")}
+    var copying by remember{mutableStateOf(false)}
     val currentPreset by rememberUpdatedState(preset)
     val exportTxt=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")){uri->
         if(uri!=null) {
@@ -29,8 +31,8 @@ import kotlinx.coroutines.withContext
                 runCatching{withContext(Dispatchers.IO){
                     val bytes=HomeDiyCode.encodeTextFile(HomeStickerAssets.export(snapshot))
                     requireNotNull(context.contentResolver.openOutputStream(uri,"wt")).use{it.write(bytes)}
-                }}.onSuccess{status("TXT已保存，包含完整数值和用到的图片，可以作为附件发给朋友")}
-                    .onFailure{status("TXT这次没保存好，请检查文件位置和素材；原装扮保留")}
+                }}.onSuccess{message="TXT已保存，包含完整数值和用到的图片，可以作为附件发给朋友"}
+                    .onFailure{message="TXT这次没保存好，请检查文件位置和素材；原装扮保留"}
                 setBusy(false)
             }
         }
@@ -39,23 +41,28 @@ import kotlinx.coroutines.withContext
     Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
         OutlinedButton(enabled=!busy,onClick={
             setBusy(true)
+            copying=true;message="正在整理装扮…"
             scope.launch {
+                var systemCopied=false
                 runCatching {
                     val code=withContext(Dispatchers.Default){HomeDiyCode.encode(HomeStickerAssets.export(preset))}
                     val clip=ClipData.newPlainText("小家键盘DIY码",code)
                     clip.description.extras=PersistableBundle().apply{putBoolean("android.content.extra.IS_SENSITIVE",true)}
                     (context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(clip)
-                    status("DIY码已复制，共${code.length}字，包含全部装扮数值和用到的图片"+if(code.length>8000)"；聊天可能限长，也可以用完整装扮文件" else "")
-                }.onFailure{status(it.message?:"这次没复制好，原装扮保留")}
-                setBusy(false)
+                    systemCopied=true
+                    com.kingzcheung.xime.clipboard.ClipboardManager.getInstance(context).saveLocalText(code)
+                    message="已复制并存入键盘剪贴板，共${code.length}字。"+if(code.length>8000)"聊天可能限长，也可以导出TXT。" else "可以从剪贴板里点选发送。"
+                }.onFailure{message=if(systemCopied)"系统已复制，但本地历史没保存好；可长按输入框粘贴，或导出TXT。" else it.message?:"这次没复制好，原装扮保留"}
+                setBusy(false);copying=false
             }
-        }){Text("复制DIY码")}
+        }){Text(if(copying)"正在准备…" else "复制DIY码")}
         OutlinedButton(enabled=!busy,onClick=openImport){Text("输入DIY码")}
     }
     Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-        TextButton(enabled=!busy,onClick={exportTxt.launch("小家键盘装扮-DIY.txt")}){Text("导出TXT")}
+        TextButton(enabled=!busy,onClick={exportTxt.launch(HomeDiyCode.textFileName(preset.name))}){Text("导出TXT")}
         TextButton(enabled=!busy,onClick=openFileImport){Text("导入TXT")}
     }
+    if(message.isNotEmpty())Text(message,style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.primary)
     }
 }
 

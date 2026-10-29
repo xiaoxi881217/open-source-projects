@@ -263,7 +263,7 @@ private fun HomeAppearanceEditorContent(onBack: () -> Unit, onApplied: () -> Uni
                 TextButton(enabled = !busy, onClick = { import.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }) { Text("导入") }
                 TextButton(enabled = !busy, onClick = { export.launch("小家键盘完整装扮.lhktheme.json") }) { Text("导出") }
             }
-            HomeDiyShareActions(draft,busy,{busy=it},{status=it},{showDiyImport=true},{import.launch(arrayOf("text/plain","application/octet-stream","application/json"))})
+            HomeDiyShareActions(draft,busy,{busy=it},{showDiyImport=true},{import.launch(arrayOf("text/plain","application/octet-stream","application/json"))})
             HomePresetStore.presets.forEach { (savedId, preset) ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = { load(savedId, preset) }, enabled = !busy, modifier = Modifier.weight(1f)) {

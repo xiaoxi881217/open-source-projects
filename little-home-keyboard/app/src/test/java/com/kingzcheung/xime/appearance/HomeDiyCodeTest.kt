@@ -7,6 +7,15 @@ import java.util.Base64
 import java.util.zip.DeflaterOutputStream
 
 class HomeDiyCodeTest {
+    @Test fun txtFileUsesPresetNameAndKeepsUnsafeCharactersOut() {
+        assertEquals("软软小云朵.txt",HomeDiyCode.textFileName("软软小云朵"))
+        assertEquals("我的装扮.txt",HomeDiyCode.textFileName(" 我的装扮.TXT "))
+        assertEquals("夜色_星星_云朵_.txt",HomeDiyCode.textFileName("夜色/星星:云朵?"))
+        assertEquals("小家键盘装扮.txt",HomeDiyCode.textFileName(" ... "))
+        assertEquals("小家键盘装扮.txt",HomeDiyCode.textFileName(".txt"))
+        assertEquals(84,HomeDiyCode.textFileName("a".repeat(100)).length)
+        assertFalse(HomeDiyCode.textFileName("x\n\u0000y").any{it.isISOControl()})
+    }
     private fun rejects(block:()->Unit) { try { block();fail("must reject") } catch(_:IllegalArgumentException) {} }
     private fun wrapped(bytes:ByteArray):String {
         val out=ByteArrayOutputStream();DeflaterOutputStream(out).use{it.write(bytes)}
@@ -18,6 +27,16 @@ class HomeDiyCodeTest {
         assertEquals(preset,HomeDiyCode.decode(code).preset)
         assertTrue(code.length<bundle.size/2)
         println("DIY_DEFAULT_CHARACTERS=${code.length};BUNDLE_BYTES=${bundle.size}")
+    }
+    @Test fun copiedCodeFitsKeyboardHistoryAndMediumImagesUseTxt() {
+        assertEquals(com.kingzcheung.xime.clipboard.ClipboardCapturePolicy.MAX_TEXT_LENGTH,HomeDiyCode.MAX_COPY_CHARS)
+        val image=ByteArray(18_000);java.util.Random(32).nextBytes(image);val id=HomeStickerBundleCodec.hash(image)
+        val preset=HomeVisualPreset(keys=mapOf("qwerty:q" to HomeKeyStyle(sticker=HomeSticker("image:$id"))))
+        val bundle=HomeStickerBundleCodec.encode(preset,mapOf(id to image));val txt=HomeDiyCode.encodeTextFile(bundle)
+        assertTrue(txt.size>HomeDiyCode.MAX_COPY_CHARS && txt.size<HomeDiyCode.MAX_CHARS)
+        rejects{HomeDiyCode.encode(bundle)}
+        assertEquals(preset,HomeDiyCode.decode(txt.decodeToString()).preset)
+        assertArrayEquals(image,HomeDiyCode.readImport(txt.inputStream()).images[id])
     }
     @Test fun allAppearanceNumbersAndEmbeddedAssetsSurvive() {
         val image=ByteArray(900){(it%251).toByte()};val id=HomeStickerBundleCodec.hash(image)

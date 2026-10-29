@@ -10,8 +10,15 @@ import java.util.zip.Inflater
 object HomeDiyCode {
     private const val PREFIX = "XJ1:"
     const val MAX_CHARS = 256 * 1024
+    const val MAX_COPY_CHARS = 20_000
     private const val MAX_FILE_CHARS = (HomeStickerBundleCodec.MAX_BYTES + 65536) * 4 / 3 + 8
-    fun encode(bundle: ByteArray): String = encodeWithLimit(bundle, MAX_CHARS)
+    fun textFileName(name: String): String {
+        val clean=name.map{if(it.isISOControl() || it in "<>:\"/\\|?*") '_' else it}.joinToString("")
+            .trim().take(80).trimEnd(' ','.')
+        val stem=if(clean.endsWith(".txt",ignoreCase=true))clean.dropLast(4).trimEnd() else clean
+        return "${stem.ifBlank { "小家键盘装扮" }}.txt"
+    }
+    fun encode(bundle: ByteArray): String = encodeWithLimit(bundle, MAX_COPY_CHARS)
     fun encodeTextFile(bundle: ByteArray): ByteArray = encodeWithLimit(bundle, MAX_FILE_CHARS).toByteArray(Charsets.UTF_8)
     private fun encodeWithLimit(bundle: ByteArray, limit: Int): String {
         HomeStickerBundleCodec.decode(bundle)
