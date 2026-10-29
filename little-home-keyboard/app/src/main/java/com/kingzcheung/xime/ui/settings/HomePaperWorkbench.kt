@@ -66,9 +66,8 @@ internal fun HomePaperTabs(selected:String,onSelect:(String)->Unit){
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(2.dp)){
             listOf("overall" to "整体","key" to "按键","shadow" to "阴影","sticker" to "贴纸","motion" to "动态","chrome" to "上方","presets" to "预设").forEach{(id,name)->
                 val color=if(selected==id)MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                HomeActionButton(onClick={onSelect(id)},contentPadding=PaddingValues(horizontal=8.dp),modifier=Modifier.widthIn(min=44.dp).height(44.dp).drawBehind{
-                    if(selected==id)drawLine(color,Offset(5.dp.toPx(),size.height-2.dp.toPx()),Offset(size.width-5.dp.toPx(),size.height-2.dp.toPx()),1.dp.toPx(),pathEffect=PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(),3.dp.toPx())))
-                }){Text(name,color=color,fontSize=12.sp)}
+                TextButton(onClick={onSelect(id)},contentPadding=PaddingValues(horizontal=8.dp),shape=RoundedCornerShape(14.dp),
+                    modifier=Modifier.widthIn(min=44.dp).height(40.dp).background(if(selected==id)MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,RoundedCornerShape(14.dp))){Text(name,color=color,fontSize=12.sp)}
             }
         }
         HomePaperRule()
@@ -77,8 +76,7 @@ internal fun HomePaperTabs(selected:String,onSelect:(String)->Unit){
 
 @Composable
 internal fun HomePaperGroup(title:String,content:@Composable ColumnScope.()->Unit){
-    Surface(color=MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha=.78f),shape=RoundedCornerShape(20.dp),
-        border=BorderStroke(1.dp,MaterialTheme.colorScheme.outlineVariant.copy(alpha=.7f))){
+    Surface(color=MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha=.78f),shape=RoundedCornerShape(20.dp)){
         Column(Modifier.fillMaxWidth().padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)){
             Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)){
                 Text(title,style=MaterialTheme.typography.titleSmall,color=MaterialTheme.colorScheme.primary)
@@ -91,9 +89,9 @@ internal fun HomePaperGroup(title:String,content:@Composable ColumnScope.()->Uni
 
 @Composable
 internal fun HomePaperSwatch(label:String,color:Long,modifier:Modifier=Modifier,onClick:()->Unit){
-    Surface(onClick=onClick,modifier=modifier.homeControlOutline(),shape=RoundedCornerShape(16.dp),color=Color.Transparent){
+    Surface(onClick=onClick,modifier=modifier,shape=RoundedCornerShape(16.dp),color=MaterialTheme.colorScheme.surfaceContainerLow){
         Row(Modifier.heightIn(min=48.dp).padding(horizontal=10.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)){
-            Box(Modifier.size(24.dp).background(Color(color),CircleShape).border(1.dp,MaterialTheme.colorScheme.outlineVariant,CircleShape))
+            Box(Modifier.size(24.dp).background(Color(color),CircleShape))
             Text(label,Modifier.weight(1f),fontSize=11.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }

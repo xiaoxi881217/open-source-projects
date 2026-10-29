@@ -26,7 +26,7 @@ import com.kingzcheung.xime.settings.DisplayMode
 @Composable
 internal fun HomeSingleKeyPreview(preset: HomeVisualPreset,id: String,label: String,dark: Boolean,
     onStickerChange: ((HomeSticker)->Unit)?=null,onLabelChange: ((HomeKeyStyle)->Unit)?=null,
-    onHintChange: ((HomeKeyStyle)->Unit)?=null,initialMode:String="press",glyph:(@Composable ()->Unit)?=null) {
+    onHintChange: ((HomeKeyStyle)->Unit)?=null,initialMode:String="press",glyph:(@Composable ()->Unit)?=null,stickerIndex:Int=0) {
     val palette=if(dark)preset.dark else preset.light;val special=!id.startsWith("toolbar:")&&id.substringAfter(':').length>1
     val previewWidth=if(special)100.dp else 72.dp;val previewHeight=if(special)58.dp else 72.dp
     val interactions=remember(id){MutableInteractionSource()};val pressed by interactions.collectIsPressedAsState()
@@ -37,21 +37,21 @@ internal fun HomeSingleKeyPreview(preset: HomeVisualPreset,id: String,label: Str
     val hint=if(id.startsWith("qwerty:") && KeysConfigHelper.getSwipeUpDisplay(id.substringAfter(':'),false)!=DisplayMode.BUBBLE)
         KeysConfigHelper.getSwipeUpLabel(id.substringAfter(':'),false) else null
     val display=gesture?.let { preset.copy(keys=preset.keys+(id to it)) }?:preset
-    val gestures=if(mode!="press")Modifier.pointerInput(id,mode) {
+    val gestures=if(mode!="press")Modifier.pointerInput(id,mode,stickerIndex) {
         awaitEachGesture {
             val down=awaitFirstDown(requireUnconsumed=false);val original=latestStyle
-            if(mode=="sticker" && original.sticker==null)return@awaitEachGesture
+            if(mode=="sticker" && original.stickerAt(stickerIndex)==null)return@awaitEachGesture
             down.consume();var draft=original;var completed=false
             try {
                 do {
                     val event=awaitPointerEvent();val pan=event.calculatePan()
                     draft=if(mode=="hint")draft.movedHint(pan.x/previewWidth.toPx(),pan.y/previewHeight.toPx()).resizedHint(event.calculateZoom()) else if(mode=="label")draft.movedLabel(pan.x/previewWidth.toPx(),pan.y/previewHeight.toPx()).resizedLabel(event.calculateZoom()) else
-                        draft.copy(sticker=draft.sticker!!.transformed(pan.x/previewWidth.toPx(),pan.y/previewHeight.toPx(),event.calculateZoom(),event.calculateRotation()))
+                        draft.withSticker(stickerIndex,draft.stickerAt(stickerIndex)!!.transformed(pan.x/previewWidth.toPx(),pan.y/previewHeight.toPx(),event.calculateZoom(),event.calculateRotation()))
                     gesture=draft;event.changes.forEach { it.consume() }
                 }while(event.changes.any { it.pressed })
                 completed=true
             } finally {
-                if(completed && draft!=original){if(mode=="hint")applyHint?.invoke(draft) else if(mode=="label")applyLabel?.invoke(draft) else draft.sticker?.let { applySticker?.invoke(it) }}
+                if(completed && draft!=original){if(mode=="hint")applyHint?.invoke(draft) else if(mode=="label")applyLabel?.invoke(draft) else draft.stickerAt(stickerIndex)?.let { applySticker?.invoke(it) }}
                 gesture=null
             }
         }
@@ -61,7 +61,7 @@ internal fun HomeSingleKeyPreview(preset: HomeVisualPreset,id: String,label: Str
             HomeChoiceChip(mode=="press",{mode="press"},label={Text("试按")})
             if(onLabelChange!=null)HomeChoiceChip(mode=="label",{mode="label"},label={Text("移动文字")})
             if(onHintChange!=null)HomeChoiceChip(mode=="hint",{mode="hint"},label={Text("移动小字")})
-            if(current.sticker!=null && onStickerChange!=null)HomeChoiceChip(mode=="sticker",{mode="sticker"},label={Text("摆放贴纸")})
+            if(current.stickerAt(stickerIndex)!=null && onStickerChange!=null)HomeChoiceChip(mode=="sticker",{mode="sticker"},label={Text("摆放贴纸")})
         }
         HomeStickerHost(Modifier.fillMaxWidth().height(150.dp).clipToBounds().then(gestures)) { previewModifier ->
             HomeBackdropHost(display,dark,previewModifier) {

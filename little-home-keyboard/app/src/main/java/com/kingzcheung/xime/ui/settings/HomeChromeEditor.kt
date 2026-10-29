@@ -11,6 +11,7 @@ internal fun HomeChromeEditor(preset:HomeVisualPreset,dark:Boolean,chrome:String
     selected:String?,protectedDrafts:Collection<HomeVisualPreset>,onChange:(HomeVisualPreset)->Unit,items:List<com.kingzcheung.xime.keyboard.ToolbarButtonItem> = emptyList()){
     val id=selected?.takeIf{it.startsWith("toolbar:") || it=="chrome:$chrome"}?:"chrome:$chrome"
     val style=preset.keys[id]?:HomeKeyStyle();val palette=if(dark)preset.dark else preset.light
+    var stickerIndex by remember(id){mutableIntStateOf(0)}
     var color by remember{mutableStateOf(false)}
     fun set(value:HomeKeyStyle){onChange(preset.copy(keys=preset.keys+(id to value)))}
     Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){
@@ -37,7 +38,7 @@ internal fun HomeChromeEditor(preset:HomeVisualPreset,dark:Boolean,chrome:String
         HomeBorderEditor(style.border?:if(id.startsWith("toolbar:"))preset.keyBorder else preset.frameBorder,dark,palette.accent,{set(style.copy(border=it))})
         HomeActionButton(onClick={set(style.copy(border=null))}){Text("边框跟随整体")}
     }
-    HomeStickerEditor(id,preset,protectedDrafts,{set(style.copy(sticker=it))},{},canSync=false)
+    HomeKeyStickersEditor(id,preset,protectedDrafts,style,stickerIndex,{stickerIndex=it},::set,canSync=false)
     HomeActionButton(onClick={onChange(preset.copy(keys=preset.keys-id))}){Text("这里恢复默认")}
     if(color)HomeColorDialog((if(dark)style.backgroundDark else style.backgroundLight)?:palette.background,{color=false}){
         set(if(dark)style.copy(backgroundDark=it) else style.copy(backgroundLight=it))

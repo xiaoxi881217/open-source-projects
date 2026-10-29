@@ -4,6 +4,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -41,7 +43,7 @@ import kotlinx.coroutines.withContext
             HomeSticker.BUILTINS.forEach{(asset,label)->HomeChoiceChip(style.iconAsset==asset,{onChange(style.copy(iconAsset=asset))},label={Text(label)})}
         }
         HomeKeyStyleScope("toolbar:icon-placement",HomeVisualPreset(keys=mapOf("toolbar:icon-placement" to style))) {
-            Box(Modifier.fillMaxWidth().height(88.dp).homeControlOutline().pointerInput(Unit){
+            Box(Modifier.fillMaxWidth().height(88.dp).background(MaterialTheme.colorScheme.surfaceContainerLow,RoundedCornerShape(16.dp)).pointerInput(Unit){
                 detectTransformGestures{_,pan,zoom,_->
                     val edge=64.dp.toPx()
                     changed(latest.copy(labelOffsetX=(latest.labelOffsetX+pan.x/edge).coerceIn(-.4f,.4f),
@@ -68,7 +70,7 @@ import kotlinx.coroutines.withContext
         Text("长按后拖到另一项的位置。更多与收起入口固定保留。",style=MaterialTheme.typography.bodySmall)
         FlowRow(horizontalArrangement=Arrangement.spacedBy(6.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
             ordered.forEach{item->key(item.id){
-                Surface(modifier=Modifier.homeControlOutline().onGloballyPositioned{bounds[item.id]=it.boundsInParent()}.pointerInput(item.id){
+                Surface(modifier=Modifier.onGloballyPositioned{bounds[item.id]=it.boundsInParent()}.pointerInput(item.id){
                     detectDragGesturesAfterLongPress(onDragStart={point=bounds[item.id]?.center?:Offset.Zero},onDrag={change,delta->
                         change.consume();point+=delta
                         val target=bounds.filter{it.value.contains(point)}.keys.firstOrNull()

@@ -1,6 +1,7 @@
 package com.kingzcheung.xime.ui.settings
 
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Sync
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -289,7 +290,7 @@ private fun HomeAppearanceEditorContent(onBack: () -> Unit, onApplied: () -> Uni
                     val source=draft.panelSyncSource(selectedPreviewKey)
                     val next=draft.withPanelStyle(source,source.substringAfter(':') in KeysConfigHelper.FUNCTION_KEY_IDS)
                     change(next);save(next,true)
-                }){Text("一键同步符号")}
+                }){Icon(androidx.compose.material.icons.Icons.Default.Sync,"同步到符号键盘",Modifier.size(18.dp));Spacer(Modifier.width(4.dp));Text("同步符号")}
                 HomePrimaryAction(shape=RoundedCornerShape(15.dp),enabled=!busy && draft.name.isNotBlank(),modifier=Modifier.weight(1f),onClick={save(draft)}) {
                     Text(if(busy)"正在保存…" else "保存并用上")
                 }
@@ -326,11 +327,19 @@ private fun HomeAppearanceEditorContent(onBack: () -> Unit, onApplied: () -> Uni
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun HomeValueSlider(label:String,value:Float,range:ClosedFloatingPointRange<Float>,initial:Float,compact:Boolean=false,onChange:(Float)->Unit){
+internal fun HomeValueSlider(label:String,value:Float,range:ClosedFloatingPointRange<Float>,initial:Float,compact:Boolean=false,onSync:(()->Unit)?=null,onChange:(Float)->Unit){
     var precise by remember { mutableStateOf(false) }
     var exact by remember(value){mutableStateOf("%.3f".format(java.util.Locale.ROOT,value).trimEnd('0').trimEnd('.'))}
     val parsed=exact.toFloatOrNull()?.takeIf{it.isFinite()&&it in range}
-    Row(Modifier.fillMaxWidth().heightIn(min=if(compact)44.dp else 52.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(4.dp)){
+    if(onSync!=null)Column {
+        Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(4.dp)) {
+            Text(label,Modifier.weight(1f),fontSize=12.sp)
+            HomeActionButton(onClick={precise=true},contentPadding=PaddingValues(horizontal=4.dp)){Text("%.2f".format(java.util.Locale.ROOT,value).trimEnd('0').trimEnd('.'),fontFamily=androidx.compose.ui.text.font.FontFamily.Monospace,fontSize=11.sp)}
+            HomeIconAction(onClick={onChange(initial)},modifier=Modifier.size(36.dp)){Icon(androidx.compose.material.icons.Icons.Default.Refresh,"${label}恢复默认",Modifier.size(16.dp))}
+            HomeSyncAction("同步$label",onSync)
+        }
+        Slider(value,onChange,valueRange=range,modifier=Modifier.fillMaxWidth())
+    } else Row(Modifier.fillMaxWidth().heightIn(min=if(compact)44.dp else 52.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(4.dp)){
         Text(label,Modifier.weight(.4f),fontSize=12.sp,maxLines=2,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         Slider(value,onChange,valueRange=range,modifier=Modifier.weight(.6f),
             thumb={Spacer(Modifier.size(12.dp).background(MaterialTheme.colorScheme.primary,androidx.compose.foundation.shape.CircleShape))},

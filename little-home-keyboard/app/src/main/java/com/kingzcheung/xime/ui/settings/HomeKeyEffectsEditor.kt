@@ -28,8 +28,8 @@ internal fun HomeKeyEffectsEditor(style: HomeKeyStyle, animationsEnabled: Boolea
     }
     AnimatedVisibility(shadowExpanded) { Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
     Row {
-        HomeActionButton(onClick={onSync(HomeStyleProperty.SHADOW_ALL,null)}){Text("同步四边整套阴影")}
-        HomeActionButton(onClick={onSync(HomeStyleProperty.SHADOW_SIDE,side)}){Text("同步这一边整套")}
+        HomeSyncAction("同步四边整套阴影",{onSync(HomeStyleProperty.SHADOW_ALL,null)},caption="四边")
+        HomeSyncAction("同步这一边整套",{onSync(HomeStyleProperty.SHADOW_SIDE,side)},caption="这边")
     }
     FlowRow {
         HomeShadowSide.entries.forEach { edge -> HomeChoiceChip(side == edge, { side = edge }, label = { Text(edge.label) }) }
@@ -37,12 +37,12 @@ internal fun HomeKeyEffectsEditor(style: HomeKeyStyle, animationsEnabled: Boolea
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text("开启${side.label}阴影", Modifier.weight(1f))
         Switch(shadow.enabled, { setShadow(shadow.copy(enabled = it)) })
-        HomeActionButton(onClick = { onSync(HomeStyleProperty.SHADOW_ENABLED, side) }) { Text("同步") }
+        HomeSyncAction("同步",{onSync(HomeStyleProperty.SHADOW_ENABLED, side)})
     }
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text("阴影向内凹", Modifier.weight(1f))
         Switch(shadow.inset, { setShadow(shadow.copy(inset = it, enabled = true)) })
-        HomeActionButton(onClick = { onSync(HomeStyleProperty.SHADOW_INSET, side) }) { Text("同步内外侧") }
+        HomeSyncAction("同步内外侧",{onSync(HomeStyleProperty.SHADOW_INSET, side)})
     }
     HomeActionButton(onClick = {
         onStyleChange(style.copy(shadows = HomeShadowSide.entries.associateWith { edge ->
@@ -53,16 +53,15 @@ internal fun HomeKeyEffectsEditor(style: HomeKeyStyle, animationsEnabled: Boolea
         HomeShadowShape.entries.forEach { shape -> HomeChoiceChip(style.shadowShape == shape,
             { onStyleChange(style.copy(shadowShape = shape)) }, label = { Text(shape.label) }) }
     }
-    HomeActionButton(onClick = { onSync(HomeStyleProperty.SHADOW_SHAPE, null) }) { Text("只同步阴影形状") }
+    HomeSyncAction("只同步阴影形状",{onSync(HomeStyleProperty.SHADOW_SHAPE, null)})
     Row {
         HomeOutlinedAction(onClick = { colorDialog = true }, modifier = Modifier.weight(1f)) { Text("${side.label}阴影颜色") }
-        HomeActionButton(onClick = { onSync(HomeStyleProperty.SHADOW_COLOR, side) }) { Text("同步这一项") }
+        HomeSyncAction("同步${side.label}阴影颜色",{onSync(HomeStyleProperty.SHADOW_COLOR, side)})
     }
     @Composable
     fun value(label: String, current: Float, range: ClosedFloatingPointRange<Float>, initial: Float,
         property: HomeStyleProperty, change: (Float) -> HomeSideShadow) {
-        HomeValueSlider("${side.label} · $label", current, range, initial) { setShadow(change(it).copy(enabled = true)) }
-        HomeActionButton(onClick = { onSync(property, side) }) { Text("只同步这个数值") }
+        HomeValueSlider("${side.label} · $label", current, range, initial,onSync={onSync(property,side)}) { setShadow(change(it).copy(enabled = true)) }
     }
     value("深浅", shadow.opacity, 0f..1f, 0.18f, HomeStyleProperty.SHADOW_OPACITY) { shadow.copy(opacity = it) }
     value("模糊", shadow.blurDp, 0f..12f, 6f, HomeStyleProperty.SHADOW_BLUR) { shadow.copy(blurDp = it) }
@@ -91,13 +90,11 @@ internal fun HomeKeyEffectsEditor(style: HomeKeyStyle, animationsEnabled: Boolea
         HomePressMotion.entries.forEach { motion -> HomeChoiceChip(style.motion == motion,
             { onStyleChange(style.copy(motion = motion)) }, label = { Text(motion.label) }) }
     }
-    HomeActionButton(onClick = { onSync(HomeStyleProperty.MOTION, null) }) { Text("只同步动态类型") }
-    HomeValueSlider("动态强度", style.motionStrength, 0f..4f, 0.65f) { onStyleChange(style.copy(motionStrength = it)) }
-    HomeActionButton(onClick = { onSync(HomeStyleProperty.MOTION_STRENGTH, null) }) { Text("只同步强度数值") }
-    HomeValueSlider("动态时长（毫秒）", style.motionDurationMs.toFloat(), 40f..600f, 120f) {
+    HomeSyncAction("只同步动态类型",{onSync(HomeStyleProperty.MOTION, null)})
+    HomeValueSlider("动态强度", style.motionStrength, 0f..4f, 0.65f,onSync={onSync(HomeStyleProperty.MOTION_STRENGTH,null)}) { onStyleChange(style.copy(motionStrength = it)) }
+    HomeValueSlider("动态时长（毫秒）", style.motionDurationMs.toFloat(), 40f..600f, 120f,onSync={onSync(HomeStyleProperty.MOTION_DURATION,null)}) {
         onStyleChange(style.copy(motionDurationMs = it.roundToInt()))
     }
-    HomeActionButton(onClick = { onSync(HomeStyleProperty.MOTION_DURATION, null) }) { Text("只同步时长数值") }
     Text("先打开总开关，再为这颗键选动态。系统关闭动画时也会停下，打字动作不会等待动画。", style = MaterialTheme.typography.bodySmall)
     } }
     }

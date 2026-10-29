@@ -30,12 +30,12 @@ internal fun HomeBorderEditor(value:HomeBorder,dark:Boolean,fallback:Long,onChan
         }
     }
     onSync?.let{sync->Row{
-        HomeActionButton(onClick={sync(HomeStyleProperty.BORDER_KIND)}){Text("同步线型")}
-        HomeActionButton(onClick={sync(HomeStyleProperty.BORDER)}){Text("同步整套边框")}
+        HomeSyncAction("同步线型",{sync(HomeStyleProperty.BORDER_KIND)},caption="线型")
+        HomeSyncAction("同步整套边框",{sync(HomeStyleProperty.BORDER)},caption="整套")
     }}
     if(color)HomeColorDialog((if(dark)value.colorDark else value.colorLight)?:fallback,{color=false}){
         onChange(if(dark)value.copy(colorDark=it) else value.copy(colorLight=it));color=false
     }
 }
 
-@Composable private fun HomeBorderSync(label:String,onClick:()->Unit){HomeActionButton(onClick=onClick){Text(label,style=MaterialTheme.typography.labelSmall)}}
+@Composable private fun HomeBorderSync(label:String,onClick:()->Unit){HomeSyncAction(label,onClick)}

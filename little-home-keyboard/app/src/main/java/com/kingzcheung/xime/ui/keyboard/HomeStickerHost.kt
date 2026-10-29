@@ -24,7 +24,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 
-private data class StickerTarget(val bounds: State<Rect?>,val sticker: State<HomeSticker>,val bitmap: State<ImageBitmap?>,
+private data class StickerTarget(val bounds: State<Rect?>,val stickers: State<List<HomeSticker>>,val bitmaps: State<Map<String,ImageBitmap>>,
     val cornerRadius: State<Float>,val shape:State<HomeKeyShape>,val progress: State<Float>,val pressed: State<Boolean>,val motion: State<HomeKeyStyle>,val animated: State<Boolean>)
 private class StickerRegistry { val targets=mutableStateMapOf<Any,StickerTarget>() }
 private val LocalStickerRegistry=staticCompositionLocalOf<StickerRegistry?> { null }
@@ -36,8 +36,9 @@ internal fun HomeStickerHost(modifier: Modifier=Modifier,content: @Composable (M
     val drawing=modifier.onGloballyPositioned { hostBounds.value=it.boundsInRoot() }.drawWithContent {
         drawContent()
         registry.targets.values.forEach { target ->
-            val bounds=target.bounds.value ?: return@forEach;val image=target.bitmap.value ?: return@forEach
-            val sticker=target.sticker.value;val host=hostBounds.value ?: return@forEach
+            val bounds=target.bounds.value ?: return@forEach;val host=hostBounds.value ?: return@forEach
+            target.stickers.value.forEach stickerLoop@{ sticker ->
+            val image=target.bitmaps.value[sticker.asset] ?: return@stickerLoop
             val sx=if(host.width>0)size.width/host.width else 1f;val sy=if(host.height>0)size.height/host.height else 1f
             val key=Rect((bounds.left-host.left)*sx,(bounds.top-host.top)*sy,(bounds.right-host.left)*sx,(bounds.bottom-host.top)*sy)
             val edge=(if(sticker.clipToKey)maxOf(key.width,key.height) else minOf(key.width,key.height)*.9f)*sticker.scale
@@ -62,6 +63,7 @@ internal fun HomeStickerHost(modifier: Modifier=Modifier,content: @Composable (M
                     clipPath(path) { render() }
                 } else render()
             }
+            }
         }
     }
     CompositionLocalProvider(LocalStickerRegistry provides registry) { content(drawing) }
@@ -71,13 +73,11 @@ internal fun HomeStickerHost(modifier: Modifier=Modifier,content: @Composable (M
 internal fun Modifier.homeStickerTarget(pressed: Boolean,progress: State<Float>,animated: Boolean): Modifier {
     val registry=LocalStickerRegistry.current ?: return this
     val style=LocalHomeKeyStyle.current ?: return this
-    val sticker=style.sticker ?: return this
-    if(sticker.effectiveLayer()!=HomeStickerLayer.ABOVE_KEY)return this
+    val stickers=style.stickers().filter{it.effectiveLayer()==HomeStickerLayer.ABOVE_KEY}
+    if(stickers.isEmpty())return this
     val token=remember { Any() };val bounds=remember { mutableStateOf<Rect?>(null) }
-    val image=produceState<ImageBitmap?>(null,sticker.asset) {
-        value=withContext(Dispatchers.IO) { HomeStickerAssets.bitmap(sticker.asset)?.asImageBitmap() }
-    }
-    val descriptor=StickerTarget(bounds,rememberUpdatedState(sticker),image,rememberUpdatedState(LocalKeyCornerRadius.current.value),rememberUpdatedState(LocalHomeKeyShape.current),progress,rememberUpdatedState(pressed),rememberUpdatedState(style),rememberUpdatedState(animated))
+    val images=homeStickerImages(stickers)
+    val descriptor=StickerTarget(bounds,rememberUpdatedState(stickers),images,rememberUpdatedState(LocalKeyCornerRadius.current.value),rememberUpdatedState(LocalHomeKeyShape.current),progress,rememberUpdatedState(pressed),rememberUpdatedState(style),rememberUpdatedState(animated))
     SideEffect { registry.targets[token]=descriptor }
     DisposableEffect(registry,token) { onDispose { registry.targets.remove(token) } }
     return onGloballyPositioned { bounds.value=it.boundsInRoot() }
@@ -86,9 +86,9 @@ internal fun Modifier.homeStickerTarget(pressed: Boolean,progress: State<Float>,
 /** 覆盖贴纸留在键帽绘制链，按键变换由外层统一处理。 */
 @Composable
 internal fun Modifier.homeClippedSticker(layer:HomeStickerLayer):Modifier {
-    val sticker=LocalHomeKeyStyle.current?.sticker?:return this
-    if(!sticker.clipToKey || sticker.effectiveLayer()!=layer)return this
-    val image=produceState<ImageBitmap?>(null,sticker.asset){value=withContext(Dispatchers.IO){HomeStickerAssets.bitmap(sticker.asset)?.asImageBitmap()}}
+    val stickers=LocalHomeKeyStyle.current?.stickers().orEmpty().filter{it.clipToKey && it.effectiveLayer()==layer}
+    if(stickers.isEmpty())return this
+    val images=homeStickerImages(stickers)
     val pressed=LocalHomeKeyPressed.current
     val radius=LocalKeyCornerRadius.current
     val shape=LocalHomeKeyShape.current
@@ -96,7 +96,8 @@ internal fun Modifier.homeClippedSticker(layer:HomeStickerLayer):Modifier {
         val r=radius.toPx().coerceIn(0f,minOf(size.width,size.height)/2)
         val path=homeFacePath(shape,Rect(Offset.Zero,size),r)
         onDrawWithContent {
-            image.value?.let{bitmap->
+            stickers.forEach { sticker ->
+            images.value[sticker.asset]?.let{bitmap->
                 val ratio=bitmap.width.toFloat()/bitmap.height
                 val w=maxOf(size.width,size.height*ratio)*sticker.scale;val h=w/ratio
                 val center=Offset(size.width*(.5f+sticker.offsetX),size.height*(.5f+sticker.offsetY))
@@ -105,7 +106,18 @@ internal fun Modifier.homeClippedSticker(layer:HomeStickerLayer):Modifier {
                         dstSize=IntSize(w.roundToInt().coerceAtLeast(1),h.roundToInt().coerceAtLeast(1)),alpha=sticker.opacity*(if(pressed?.value==true).82f else 1f))
                 }}
             }
+            }
             drawContent()
         }
+    }
+}
+
+@Composable
+private fun homeStickerImages(stickers:List<HomeSticker>):State<Map<String,ImageBitmap>> {
+    val assets=stickers.map{it.asset}.distinct()
+    return produceState<Map<String,ImageBitmap>>(emptyMap(),assets) {
+        // 不让新图片加载期间复用上一组图片，IO完成后一次替换。
+        value=emptyMap()
+        value=withContext(Dispatchers.IO){assets.mapNotNull{asset->HomeStickerAssets.bitmap(asset)?.asImageBitmap()?.let{asset to it}}.toMap()}
     }
 }

@@ -24,8 +24,7 @@ internal fun HomeHintEditor(style:HomeKeyStyle,palette:HomePalette,dark:Boolean,
     var precise by remember { mutableStateOf(false) }
     var color by remember { mutableStateOf(false) }
     val colorProperty=if(dark)HomeStyleProperty.HINT_DARK else HomeStyleProperty.HINT_LIGHT
-    Surface(shape=RoundedCornerShape(16.dp),color=MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha=.7f),
-        border=BorderStroke(1.dp,MaterialTheme.colorScheme.outlineVariant)) {
+    Surface(shape=RoundedCornerShape(16.dp),color=MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha=.7f)) {
         Column {
             Row(Modifier.fillMaxWidth().clickable{expanded=!expanded}.padding(horizontal=14.dp,vertical=12.dp),
                 verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
@@ -45,7 +44,7 @@ internal fun HomeHintEditor(style:HomeKeyStyle,palette:HomePalette,dark:Boolean,
                     }
                     HomePaperSwatch("小字颜色",(if(dark)style.hintDark else style.hintLight)?:palette.text,Modifier.fillMaxWidth()){color=true}
                     Row {
-                        HomeActionButton(onClick={onSync(colorProperty)}){Text("同步颜色")}
+                        HomeSyncAction("同步颜色",{onSync(colorProperty)})
                         HomeActionButton(onClick={onChange(if(dark)style.copy(hintDark=null) else style.copy(hintLight=null))}){Text("跟随原色")}
                     }
                     Row(verticalAlignment=Alignment.CenterVertically) {
@@ -63,16 +62,16 @@ internal fun HomeHintEditor(style:HomeKeyStyle,palette:HomePalette,dark:Boolean,
                     }
                     if(precise) {
                         HomeValueSlider("横向",style.hintOffsetX,-.8f.. .8f,0f){onChange(style.copy(hintOffsetX=it))}
-                        HomeActionButton(onClick={onSync(HomeStyleProperty.HINT_X)}){Text("只同步横向")}
+                        HomeSyncAction("只同步横向",{onSync(HomeStyleProperty.HINT_X)})
                         HomeValueSlider("纵向",style.hintOffsetY,-.8f.. .8f,0f){onChange(style.copy(hintOffsetY=it))}
-                        HomeActionButton(onClick={onSync(HomeStyleProperty.HINT_Y)}){Text("只同步纵向")}
+                        HomeSyncAction("只同步纵向",{onSync(HomeStyleProperty.HINT_Y)})
                     }
                     FlowRow {
-                        HomeActionButton(onClick={onSync(HomeStyleProperty.HINT_POSITION)}){Text("同步位置")}
+                        HomeSyncAction("同步位置",{onSync(HomeStyleProperty.HINT_POSITION)},caption="位置")
                         HomeActionButton(onClick={onChange(style.copy(hintOffsetX=0f,hintOffsetY=0f))}){Text("回到原位")}
                         HomeActionButton(onClick={onChange(style.copy(hintFontSize=null))}){Text("字号跟随原设置")}
                     }
-                    HomeTonalAction(onClick={onSync(HomeStyleProperty.HINT_ALL)},modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(12.dp)){Text("同步小字整套样式")}
+                    HomeSyncAction("同步小字整套样式",{onSync(HomeStyleProperty.HINT_ALL)},caption="整套小字",modifier=Modifier.fillMaxWidth())
                     HomeActionButton(onClick={onChange(style.copy(hintOffsetX=0f,hintOffsetY=0f,hintFontSize=null,hintLight=null,hintDark=null,hintOpacity=1f,hintVisible=true))}){Text("小字恢复原设置")}
                 }
             }
@@ -85,5 +84,5 @@ internal fun HomeHintEditor(style:HomeKeyStyle,palette:HomePalette,dark:Boolean,
 
 @Composable
 private fun HomeHintSync(description:String,onClick:()->Unit) {
-    HomeIconAction(onClick=onClick){Icon(Icons.Default.Sync,description,Modifier.size(18.dp),tint=MaterialTheme.colorScheme.primary)}
+    HomeSyncAction(description,onClick)
 }

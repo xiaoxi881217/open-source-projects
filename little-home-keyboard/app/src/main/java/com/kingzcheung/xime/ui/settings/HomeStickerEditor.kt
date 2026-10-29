@@ -17,9 +17,9 @@ import kotlinx.coroutines.withContext
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun HomeStickerEditor(keyId: String,preset: HomeVisualPreset,protectedDrafts: Collection<HomeVisualPreset>,
-    onChange: (HomeSticker?)->Unit,onSync: (HomeStyleProperty)->Unit, value:HomeSticker?=preset.keys[keyId]?.sticker, canSync:Boolean=true, supportsCover:Boolean=true) {
+    onChange: (HomeSticker?)->Unit,onSync: (HomeStyleProperty)->Unit, value:HomeSticker?=preset.keys[keyId]?.sticker, canSync:Boolean=true, supportsCover:Boolean=true, initialExpanded:Boolean=false) {
     val sticker=value;val context=LocalContext.current;val scope=rememberCoroutineScope()
-    var expanded by remember {mutableStateOf(false)};var busy by remember {mutableStateOf(false)}
+    var expanded by remember {mutableStateOf(initialExpanded)};var busy by remember {mutableStateOf(false)}
     var precise by remember(keyId) {mutableStateOf(false)}
     var message by remember {mutableStateOf("")};var linkDialog by remember{mutableStateOf(false)};var link by remember{mutableStateOf("")};var importTarget by remember {mutableStateOf("")}
     val currentKey by rememberUpdatedState(keyId);val apply by rememberUpdatedState(onChange)
@@ -35,7 +35,7 @@ internal fun HomeStickerEditor(keyId: String,preset: HomeVisualPreset,protectedD
             finally{busy=false}
         }
     }
-    HomeActionButton(onClick={expanded=!expanded}){Text("贴纸 · ${if(sticker==null)"还没贴" else "已叠加"} · ${if(expanded)"收起" else "展开"}")}
+    if(!initialExpanded)HomeActionButton(onClick={expanded=!expanded}){Text("贴纸 · ${if(sticker==null)"还没贴" else "已叠加"} · ${if(expanded)"收起" else "展开"}")}
     AnimatedVisibility(expanded){Column(verticalArrangement=Arrangement.spacedBy(6.dp)){
         FlowRow(horizontalArrangement=Arrangement.spacedBy(6.dp)){
             HomeSticker.BUILTINS.forEach{(asset,title)->HomeChoiceChip(sticker?.asset==asset,{onChange((sticker?:HomeSticker()).copy(asset=asset))},label={Text(title)},enabled=!busy)}
@@ -51,21 +51,20 @@ internal fun HomeStickerEditor(keyId: String,preset: HomeVisualPreset,protectedD
                 HomeChoiceChip(!sticker.clipToKey,{onChange(sticker.copy(clipToKey=false))},label={Text("自由贴纸")})
                 HomeChoiceChip(sticker.clipToKey,{onChange(sticker.copy(clipToKey=true,offsetX=0f,offsetY=0f,scale=1f))},label={Text("覆盖键内")})
             }
-            if(canSync && supportsCover)HomeActionButton(onClick={onSync(HomeStyleProperty.STICKER_CLIP)}){Text("只同步覆盖模式")}
+            if(canSync && supportsCover)HomeSyncAction("只同步覆盖模式",{onSync(HomeStyleProperty.STICKER_CLIP)},caption="覆盖模式")
             if(supportsCover && sticker.clipToKey) {
                 FlowRow(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
                     HomeStickerLayer.entries.forEach{layer->HomeChoiceChip(sticker.layer==layer,{onChange(sticker.copy(layer=layer))},label={Text(layer.label)})}
                 }
-                if(canSync)HomeActionButton(onClick={onSync(HomeStyleProperty.STICKER_LAYER)}){Text("只同步贴纸图层")}
+                if(canSync)HomeSyncAction("只同步贴纸图层",{onSync(HomeStyleProperty.STICKER_LAYER)},caption="图层")
             }
 
             @Composable fun value(title:String,v:Float,range:ClosedFloatingPointRange<Float>,default:Float,property:HomeStyleProperty,change:(Float)->HomeSticker){
-                HomeValueSlider(title,v,range,default){onChange(change(it))}
-                if(canSync)HomeActionButton(onClick={onSync(property)}){Text("只同步这个数值")}
+                HomeValueSlider(title,v,range,default,onSync=if(canSync)({onSync(property)})else null){onChange(change(it))}
             }
-            Row{
-                HomeActionButton(onClick={onSync(HomeStyleProperty.STICKER)}){Text("同步整张贴纸")}
-                HomeActionButton(onClick={onSync(HomeStyleProperty.STICKER_ASSET)}){Text("只同步图片")}
+            if(canSync)Row{
+                HomeSyncAction("同步整张贴纸",{onSync(HomeStyleProperty.STICKER)},caption="整张")
+                HomeSyncAction("只同步图片",{onSync(HomeStyleProperty.STICKER_ASSET)},caption="图片")
             }
             Text("在上面的预览选“摆放贴纸”，直接拖动、捏合和旋转。",style=MaterialTheme.typography.bodySmall)
             HomeActionButton(onClick={precise=!precise}){Text(if(precise)"收起贴纸精确数值" else "贴纸精确数值")}
@@ -76,7 +75,7 @@ internal fun HomeStickerEditor(keyId: String,preset: HomeVisualPreset,protectedD
             value("旋转角度",sticker.rotation,-180f..180f,0f,HomeStyleProperty.STICKER_ROTATION){sticker.copy(rotation=it)}
             value("贴纸透明度",sticker.opacity,0f..1f,1f,HomeStyleProperty.STICKER_OPACITY){sticker.copy(opacity=it)}
             }
-            Text("数值只同步到已经有贴纸的目标键；想给空白键也贴上，用整张贴纸或只同步图片。",style=MaterialTheme.typography.bodySmall)
+            if(canSync)Text("数值只同步到已经有贴纸的目标键；想给空白键也贴上，用整张贴纸或只同步图片。",style=MaterialTheme.typography.bodySmall)
             Row{HomeActionButton(onClick={onChange(HomeSticker(asset=sticker.asset))}){Text("摆回小角落")};HomeActionButton(onClick={onChange(null)}){Text("只移除贴纸")}}
         }
         HomeActionButton(enabled=!busy,onClick={

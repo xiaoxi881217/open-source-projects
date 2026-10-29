@@ -75,7 +75,8 @@ object HomeStickerAssets {
         val walls=bundle.preset.wallpapers().map{it.asset.substringAfter(':')}.distinct().associateWith{importImage(requireNotNull(bundle.images[it]),wallpaper=true)}
         fun installWallpaper(w:HomeWallpaper?)=w?.copy(asset=requireNotNull(walls[w.asset.substringAfter(':')]))
         val wallpaper=installWallpaper(bundle.preset.wallpaper)
-        fun installStyle(style:HomeKeyStyle)=style.copy(sticker=style.sticker?.let{sticker->remap[sticker.asset.removePrefix("image:")]?.let{sticker.copy(asset=it)}?:sticker},
+        fun installSticker(sticker:HomeSticker)=remap[sticker.asset.removePrefix("image:")]?.let{sticker.copy(asset=it)}?:sticker
+        fun installStyle(style:HomeKeyStyle)=style.withStickers(style.stickers().map(::installSticker)).copy(
             iconAsset=style.iconAsset?.let{remap[it.removePrefix("image:")]?:it},wallpaper=installWallpaper(style.wallpaper))
         val preset=bundle.preset.copy(floatingStickers=bundle.preset.floatingStickers.map{f->f.copy(sticker=remap[f.sticker.asset.removePrefix("image:")]?.let{f.sticker.copy(asset=it)}?:f.sticker)},wallpaper=wallpaper,panelStyle=bundle.preset.panelStyle?.let(::installStyle),keys=bundle.preset.keys.mapValues{installStyle(it.value)})
         validateReferences(preset);return preset

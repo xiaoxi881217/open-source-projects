@@ -67,6 +67,6 @@ internal fun Modifier.homePreviewKeyTarget(): Modifier {
     DisposableEffect(registry, token) { onDispose { registry.bounds.remove(token) } }
     return onGloballyPositioned { registry.bounds[token] = id to it.boundsInRoot() }.drawWithContent {
         drawContent()
-        if (registry.selected.value == id) drawRect(Color(0xffa95779), style = Stroke(1.5.dp.toPx()))
+        if (registry.selected.value == id && id.substringBefore(':') in setOf("qwerty","t9"))drawRect(Color(0xffa95779).copy(alpha=.08f))
     }
 }

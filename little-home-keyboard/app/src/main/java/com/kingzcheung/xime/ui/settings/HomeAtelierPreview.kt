@@ -38,7 +38,7 @@ internal fun HomeAtelierPreview(percent: Int,onPercent: (Int)->Unit,naturalWidth
     },confirmButton={HomeActionButton(onClick={options=false}){Text("好了")}})
     val height=HomeEditorViewport.frameHeight(LocalConfiguration.current.screenHeightDp.toFloat(),percent)
     Surface(shape=RoundedCornerShape(12.dp),color=MaterialTheme.colorScheme.surfaceContainerLowest,
-        modifier=Modifier.fillMaxWidth().border(1.dp,MaterialTheme.colorScheme.outlineVariant,RoundedCornerShape(12.dp))) {
+        modifier=Modifier.fillMaxWidth()) {
         Box {
         Layout(content=content,modifier=Modifier.fillMaxWidth().height(height.dp).padding(4.dp)) { children,constraints->
             val width=naturalWidthDp?.takeIf{it.isFinite() && it>0}?.dp?.roundToPx()?:constraints.maxWidth

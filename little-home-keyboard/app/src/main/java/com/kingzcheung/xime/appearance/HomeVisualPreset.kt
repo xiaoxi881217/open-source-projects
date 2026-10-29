@@ -52,7 +52,27 @@ data class HomeKeyStyle(
     val iconAsset:String?=null,
     val iconSize:Float=24f,
     val wallpaper:HomeWallpaper?=null,
+    val extraStickers: List<HomeSticker> = emptyList(),
 ) {
+    fun stickers():List<HomeSticker> = listOfNotNull(sticker)+extraStickers
+    fun stickerAt(index:Int):HomeSticker? = stickers().getOrNull(index)
+    fun withStickers(values:List<HomeSticker>):HomeKeyStyle {
+        require(values.size<=MAX_STICKERS){"每颗键最多叠8张贴纸"}
+        return copy(sticker=values.firstOrNull(),extraStickers=values.drop(1))
+    }
+    fun withSticker(index:Int,value:HomeSticker?):HomeKeyStyle {
+        val values=stickers().toMutableList()
+        require(index in 0..values.size){"请重新选择贴纸"}
+        if(index==values.size){if(value!=null)values.add(value)}else if(value==null)values.removeAt(index)else values[index]=value
+        return withStickers(values)
+    }
+    fun moveSticker(index:Int,direction:Int):HomeKeyStyle {
+        val values=stickers().toMutableList();val target=index+direction
+        require(index in values.indices && target in values.indices){"贴纸已经在边缘"}
+        java.util.Collections.swap(values,index,target)
+        return withStickers(values)
+    }
+    companion object { const val MAX_STICKERS=8 }
     fun movedLabel(dx: Float,dy: Float): HomeKeyStyle = if(!dx.isFinite() || !dy.isFinite())this else
         copy(labelOffsetX=(labelOffsetX+dx).coerceIn(-.4f,.4f),labelOffsetY=(labelOffsetY+dy).coerceIn(-.4f,.4f))
     fun resizedLabel(zoom: Float): HomeKeyStyle = if(!zoom.isFinite() || zoom<=0 || kotlin.math.abs(zoom-1f)<.0001f)this else
@@ -67,7 +87,8 @@ data class HomeKeyStyle(
         require(cornerRadius == null || cornerRadius in 0..24) { "按键圆角超出范围" }
         require(shadows.size <= 4) { "每颗键最多四边阴影" }
         shadows.values.forEach { it.validate() }
-        sticker?.validate()
+        require(stickers().size<=MAX_STICKERS){"每颗键最多叠8张贴纸"}
+        stickers().forEach{it.validate()}
         border?.validate()
         wallpaper?.validate()
         require(textOpacity.isFinite() && textOpacity in 0f..1f){"主文字不透明度超出范围"}
@@ -94,7 +115,7 @@ enum class HomeStyleProperty(val label: String) {
     SHADOW_ALL("四边整套阴影"), SHADOW_SIDE("这一边整套阴影"), SHADOW_SHAPE("阴影形状"), SHADOW_ENABLED("阴影开关"), SHADOW_INSET("阴影内外侧"), SHADOW_COLOR("阴影颜色"),
     SHADOW_OPACITY("阴影深浅"), SHADOW_BLUR("阴影模糊"), SHADOW_SPREAD("阴影扩散"),
     SHADOW_DISTANCE("阴影距离"), SHADOW_ANGLE("阴影角度"),
-    STICKER("整张贴纸"), STICKER_ASSET("贴纸图片"), STICKER_X("贴纸横向位置"), STICKER_Y("贴纸纵向位置"),
+    STICKERS("全部贴纸"), STICKER("这张贴纸"), STICKER_ASSET("贴纸图片"), STICKER_X("贴纸横向位置"), STICKER_Y("贴纸纵向位置"),
     STICKER_SCALE("贴纸大小"), STICKER_ROTATION("贴纸旋转"), STICKER_OPACITY("贴纸透明度"), STICKER_CLIP("贴纸覆盖模式"), STICKER_LAYER("贴纸图层"),
     MOTION("按压动态类型"), MOTION_STRENGTH("动态强度"), MOTION_DURATION("动态时长")
 }
@@ -149,7 +170,7 @@ data class HomeVisualPreset(
         keys.values.forEach { it.validate() }
     }
 
-    fun stickers():List<HomeSticker> = keys.values.mapNotNull{it.sticker}+listOfNotNull(panelStyle?.sticker)+floatingStickers.map{it.sticker}
+    fun stickers():List<HomeSticker> = styles().flatMap{it.stickers()}+floatingStickers.map{it.sticker}
     fun styles():List<HomeKeyStyle> = keys.values.toList()+listOfNotNull(panelStyle)
     fun wallpapers():List<HomeWallpaper> = listOfNotNull(wallpaper)+styles().mapNotNull{it.wallpaper}
     fun iconAssets():List<String> = styles().mapNotNull{it.iconAsset}
@@ -172,7 +193,7 @@ data class HomeVisualPreset(
     }
 
     fun synchronize(sourceId: String, targetIds: Set<String>, property: HomeStyleProperty,
-        side: HomeShadowSide? = null): HomeVisualPreset {
+        side: HomeShadowSide? = null, stickerIndex:Int=0): HomeVisualPreset {
         require(sourceId.matches(Regex("(qwerty|t9|toolbar|chrome):[a-z0-9_-]{1,40}"))) { "来源按键编号无效" }
         require(targetIds.isNotEmpty() && targetIds.all { it.substringBefore(':') == sourceId.substringBefore(':') }) {
             "请在同一种键盘中选择要同步的按键"
@@ -216,13 +237,14 @@ data class HomeVisualPreset(
                 HomeStyleProperty.HINT_OPACITY -> previous.copy(hintOpacity=source.hintOpacity)
                 HomeStyleProperty.HINT_VISIBLE -> previous.copy(hintVisible=source.hintVisible)
                 HomeStyleProperty.CORNER_RADIUS -> previous.copy(cornerRadius = source.cornerRadius ?: cornerRadius)
-                HomeStyleProperty.STICKER -> previous.copy(sticker = source.sticker)
-                HomeStyleProperty.STICKER_ASSET -> previous.copy(sticker = source.sticker?.let { from -> (previous.sticker ?: HomeSticker()).copy(asset=from.asset) })
+                HomeStyleProperty.STICKERS -> previous.withStickers(source.stickers())
+                HomeStyleProperty.STICKER -> previous.withSticker(stickerIndex.coerceAtMost(previous.stickers().size),source.stickerAt(stickerIndex))
+                HomeStyleProperty.STICKER_ASSET -> source.stickerAt(stickerIndex)?.let { from -> previous.withSticker(stickerIndex.coerceAtMost(previous.stickers().size),(previous.stickerAt(stickerIndex)?:HomeSticker()).copy(asset=from.asset)) } ?: previous
                 HomeStyleProperty.STICKER_X, HomeStyleProperty.STICKER_Y, HomeStyleProperty.STICKER_SCALE,
                 HomeStyleProperty.STICKER_ROTATION, HomeStyleProperty.STICKER_OPACITY, HomeStyleProperty.STICKER_CLIP, HomeStyleProperty.STICKER_LAYER -> {
-                    val from = requireNotNull(source.sticker) { "先给来源按键选一张贴纸" }
-                    val into = previous.sticker
-                    if (into == null) previous else previous.copy(sticker = when(property) {
+                    val from = requireNotNull(source.stickerAt(stickerIndex)) { "先给来源按键选一张贴纸" }
+                    val into = previous.stickerAt(stickerIndex)
+                    if (into == null) previous else previous.withSticker(stickerIndex,when(property) {
                         HomeStyleProperty.STICKER_X -> into.copy(offsetX=from.offsetX)
                         HomeStyleProperty.STICKER_Y -> into.copy(offsetY=from.offsetY)
                         HomeStyleProperty.STICKER_SCALE -> into.copy(scale=from.scale)

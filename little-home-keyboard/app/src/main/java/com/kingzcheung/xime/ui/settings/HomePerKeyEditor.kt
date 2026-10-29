@@ -34,8 +34,11 @@ internal fun HomePerKeyEditor(preset: HomeVisualPreset, dark: Boolean, onChange:
     var chooseKey by remember { mutableStateOf(false) }
     var fineGestures by remember { mutableStateOf(false) }
     var hintGesture by remember { mutableStateOf(false) }
+    var stickerGesture by remember { mutableStateOf(false) }
     val sourceId = "$layout:$selected"
     val style = preset.keys[sourceId] ?: HomeKeyStyle()
+    var stickerIndex by remember(sourceId){mutableIntStateOf(0)}
+    val activeSticker=stickerIndex.coerceIn(0,(style.stickers().size-1).coerceAtLeast(0))
     val palette = if (dark) preset.dark else preset.light
     var colorEdit by remember { mutableStateOf<HomeStyleProperty?>(null) }
     var sync by remember { mutableStateOf<HomeStyleProperty?>(null) }
@@ -49,13 +52,13 @@ internal fun HomePerKeyEditor(preset: HomeVisualPreset, dark: Boolean, onChange:
             HomeActionButton(onClick={fineGestures=!fineGestures}){Text(if(fineGestures)"收起微调" else "手势微调")}
         }
         if(fineGestures)HomeSingleKeyPreview(preset, sourceId, title(selected), dark,
-            onStickerChange={ set(style.copy(sticker=it)) },onLabelChange=if(layout=="toolbar")null else {next->set(style.copy(labelOffsetX=next.labelOffsetX,labelOffsetY=next.labelOffsetY,labelFontSize=next.labelFontSize))},
-            onHintChange=if(layout=="toolbar")null else {next->set(style.copy(hintOffsetX=next.hintOffsetX,hintOffsetY=next.hintOffsetY,hintFontSize=next.hintFontSize))},initialMode=if(hintGesture)"hint" else "press",glyph=if(glyph!=null)({glyph(selected)})else null)
+            onStickerChange={ set(style.withSticker(activeSticker,it)) },onLabelChange=if(layout=="toolbar")null else {next->set(style.copy(labelOffsetX=next.labelOffsetX,labelOffsetY=next.labelOffsetY,labelFontSize=next.labelFontSize))},
+            onHintChange=if(layout=="toolbar")null else {next->set(style.copy(hintOffsetX=next.hintOffsetX,hintOffsetY=next.hintOffsetY,hintFontSize=next.hintFontSize))},initialMode=if(hintGesture)"hint" else if(stickerGesture)"sticker" else "press",glyph=if(glyph!=null)({glyph(selected)})else null,stickerIndex=activeSticker)
         if(section in listOf("all","key")){
-        HomeHintEditor(style,palette,dark,::set,{hintGesture=true;fineGestures=true},{sync=it})
+        HomeHintEditor(style,palette,dark,::set,{hintGesture=true;stickerGesture=false;fineGestures=true},{sync=it})
         FlowRow(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
             HomeKeyShape.entries.forEach{kind->HomeChoiceChip((style.shape?:preset.keyShape)==kind,{set(style.copy(shape=kind))},label={Text(kind.label)})}
-            HomeActionButton(onClick={sync=HomeStyleProperty.SHAPE}){Text("同步形状")}
+            HomeSyncAction("同步形状",{sync=HomeStyleProperty.SHAPE})
         }
         HomePaperGroup("这颗键的边框") {
             HomeBorderEditor(style.border?:preset.keyBorder,dark,palette.accent,{set(style.copy(border=it))},{sync=it})
@@ -65,10 +68,10 @@ internal fun HomePerKeyEditor(preset: HomeVisualPreset, dark: Boolean, onChange:
             HomeOutlinedAction(onClick={set(style.copy(labelFontSize=((style.labelFontSize?:18f)-2f).coerceIn(2f,32f)))}){Text("A−")}
             HomeActionButton(onClick={preciseLabel=true}){Text("文字字号 ${style.labelFontSize?.let { "%.1f".format(it) }?:"跟随原设置"}")}
             HomeOutlinedAction(onClick={set(style.copy(labelFontSize=((style.labelFontSize?:18f)+2f).coerceIn(2f,32f)))}){Text("A＋")}
-            HomeActionButton(onClick={sync=HomeStyleProperty.LABEL_FONT_SIZE}){Text("同步字号")}
+            HomeSyncAction("同步字号",{sync=HomeStyleProperty.LABEL_FONT_SIZE})
         }
         FlowRow {
-            HomeActionButton(onClick={sync=HomeStyleProperty.LABEL_POSITION}){Text("同步文字位置")}
+            HomeSyncAction("同步文字位置",{sync=HomeStyleProperty.LABEL_POSITION},caption="位置")
             HomeActionButton(onClick={set(style.copy(labelOffsetX=0f,labelOffsetY=0f))}){Text("文字回到原位")}
             HomeActionButton(onClick={preciseLabel=!preciseLabel}){Text(if(preciseLabel)"收起精确数值" else "文字精确数值")}
         }
@@ -76,35 +79,32 @@ internal fun HomePerKeyEditor(preset: HomeVisualPreset, dark: Boolean, onChange:
             HomeValueSlider("主文字字号（与候选词分开）",style.labelFontSize?:18f,2f..32f,18f){set(style.copy(labelFontSize=it))}
             HomeActionButton(onClick={set(style.copy(labelFontSize=null))}){Text("字号跟随原设置")}
             HomeValueSlider("文字横向位置",style.labelOffsetX,-.4f.. .4f,0f){set(style.copy(labelOffsetX=it))}
-            HomeActionButton(onClick={sync=HomeStyleProperty.LABEL_X}){Text("只同步横向数值")}
+            HomeSyncAction("只同步横向数值",{sync=HomeStyleProperty.LABEL_X})
             HomeValueSlider("文字纵向位置",style.labelOffsetY,-.4f.. .4f,0f){set(style.copy(labelOffsetY=it))}
-            HomeActionButton(onClick={sync=HomeStyleProperty.LABEL_Y}){Text("只同步纵向数值")}
+            HomeSyncAction("只同步纵向数值",{sync=HomeStyleProperty.LABEL_Y})
         }
         }
-        if(section in listOf("all","sticker"))HomeStickerEditor(sourceId,preset,protectedDrafts,{ set(style.copy(sticker=it)) },{ sync=it })
+        if(section in listOf("all","sticker"))HomeKeyStickersEditor(sourceId,preset,protectedDrafts,style,activeSticker,{stickerIndex=it},::set,{sync=it},{fineGestures=true;hintGesture=false;stickerGesture=true})
         if(section in listOf("all","key")){
-        HomeValueSlider("键帽底色不透明度（0透明 / 1实色）",style.keyOpacity,0f..1f,1f){set(style.copy(keyOpacity=it))}
-        HomeActionButton(onClick={sync=HomeStyleProperty.KEY_OPACITY}){Text("只同步键帽透明度")}
-        HomeValueSlider("键帽磨砂度",style.frost,0f..1f,0f){set(style.copy(frost=it))}
-        HomeActionButton(onClick={sync=HomeStyleProperty.FROST}){Text("只同步磨砂度")}
+        HomeValueSlider("底色不透明度",style.keyOpacity,0f..1f,1f,onSync={sync=HomeStyleProperty.KEY_OPACITY}){set(style.copy(keyOpacity=it))}
+        HomeValueSlider("键帽磨砂度",style.frost,0f..1f,0f,onSync={sync=HomeStyleProperty.FROST}){set(style.copy(frost=it))}
         Text("降低底色不透明度，才能看见背后的壁纸和磨砂；字母、贴纸保持清晰。",style=MaterialTheme.typography.bodySmall)
         val backgroundProperty = if (dark) HomeStyleProperty.BACKGROUND_DARK else HomeStyleProperty.BACKGROUND_LIGHT
         val textProperty = if (dark) HomeStyleProperty.TEXT_DARK else HomeStyleProperty.TEXT_LIGHT
         listOf(backgroundProperty to "按键颜色", textProperty to "文字颜色").forEach { (property, title) ->
             Row {
                 HomeOutlinedAction(onClick = { colorEdit = property }, modifier = Modifier.weight(1f)) { Text(title) }
-                HomeActionButton(onClick = { sync = property }) { Text("同步这一项") }
+                HomeSyncAction("同步$title",{sync = property})
             }
         }
-        HomeValueSlider("大字不透明度",style.textOpacity,0f..1f,1f){set(style.copy(textOpacity=it))}
-        HomeActionButton(onClick={sync=HomeStyleProperty.TEXT_OPACITY}){Text("只同步大字透明度")}
+        HomeValueSlider("大字不透明度",style.textOpacity,0f..1f,1f,onSync={sync=HomeStyleProperty.TEXT_OPACITY}){set(style.copy(textOpacity=it))}
         if((style.shape?:preset.keyShape)!=HomeKeyShape.CIRCLE)HomeValueSlider("这颗键的圆角", (style.cornerRadius ?: preset.cornerRadius).toFloat(), 0f..24f, preset.cornerRadius.toFloat()) {
             set(style.copy(cornerRadius = it.roundToInt()))
         }
         Row {
             HomeActionButton(onClick = { set(style.copy(cornerRadius=null)) }) { Text("圆角跟随整体") }
-            HomeActionButton(onClick = { sync = HomeStyleProperty.CORNER_RADIUS }) { Text("只同步圆角数值") }
-            HomeActionButton(onClick = { sync = HomeStyleProperty.ALL }) { Text("同步这颗键的整套样式") }
+            HomeSyncAction("只同步圆角数值",{sync = HomeStyleProperty.CORNER_RADIUS})
+            HomeSyncAction("同步这颗键的整套样式",{sync = HomeStyleProperty.ALL},caption="整套样式")
         }
         HomeActionButton(onClick = { onChange(preset.copy(keys = preset.keys - sourceId)) }) { Text("这颗键恢复跟随主题") }
         }
@@ -147,6 +147,8 @@ internal fun HomePerKeyEditor(preset: HomeVisualPreset, dark: Boolean, onChange:
             text = {
                 Column(Modifier.heightIn(max = 380.dp).verticalScroll(rememberScrollState())) {
                     Text("从 ${title(selected)} 同步到下列按键。其他属性保持原样，可用页面顶部的撤销恢复。")
+                    if(property.name.startsWith("STICKER") && property!=HomeStyleProperty.STICKERS)Text("来源：第${activeSticker+1}张；目标改相同编号，缺少该编号时数值同步会跳过，图片/整张同步会追加。",style=MaterialTheme.typography.bodySmall)
+                    if(property==HomeStyleProperty.STICKERS)Text("会替换目标键的全部贴纸，其他样式保留。",style=MaterialTheme.typography.bodySmall)
                     Row {
                         HomeActionButton(onClick = { targets = ids.toSet() }) { Text(if(layout=="toolbar")"全选快捷图标" else "全选本键盘") }
                         HomeActionButton(onClick = { targets = emptySet() }) { Text("取消全选") }
@@ -204,7 +206,7 @@ internal fun HomePerKeyEditor(preset: HomeVisualPreset, dark: Boolean, onChange:
                 }
             }, confirmButton = {
                 HomeActionButton(enabled = targets.isNotEmpty(), onClick = {
-                    onChange(preset.synchronize(sourceId, targets.map { "$layout:$it" }.toSet(), property, edge))
+                    onChange(preset.synchronize(sourceId, targets.map { "$layout:$it" }.toSet(), property, edge,activeSticker))
                     sync = null
                 }) { Text("确认同步") }
             }, dismissButton = { HomeActionButton(onClick = { sync = null }) { Text("先不改") } })
