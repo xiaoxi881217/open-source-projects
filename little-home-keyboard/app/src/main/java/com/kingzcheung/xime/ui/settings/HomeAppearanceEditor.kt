@@ -250,7 +250,7 @@ private fun HomeAppearanceEditorContent(onBack: () -> Unit, onApplied: () -> Uni
                                     }
                                 })
                         }
-                        if(section=="chrome")HomeChromeEditor(draft,dark,if(previewChrome=="menu")"toolbar" else previewChrome,{previewChrome=it;selectedPreviewKey="chrome:$it"},selectedPreviewKey,undo.toList()+redo.toList(),::change,previewState.toolbarItems)
+                        if(section=="chrome")HomeChromeEditor(draft,dark,if(previewChrome=="menu")"toolbar" else previewChrome,{previewChrome=it;selectedPreviewKey="chrome:$it"},selectedPreviewKey,undo.toList()+redo.toList(),::change,previewState.toolbarItems,onSelected={selectedPreviewKey=it})
                         if(section in listOf("key","shadow","sticker","motion") && !(section=="sticker"&&(freeStickers||toolbarSelected)))HomePerKeyEditor(draft,dark,::change,undo.toList()+redo.toList(),section,if(previewState.layout==KeyboardLayoutState.T9Pinyin)"t9" else "qwerty",{layoutOverride=if(it=="t9")KeyboardLayoutState.T9Pinyin else KeyboardLayoutState.Chinese},selectedPreviewKey,{selectedPreviewKey=it})
                     }
                 }

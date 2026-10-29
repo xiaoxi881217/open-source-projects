@@ -8,7 +8,7 @@ import com.kingzcheung.xime.appearance.*
 
 @Composable
 internal fun HomeChromeEditor(preset:HomeVisualPreset,dark:Boolean,chrome:String,onChrome:(String)->Unit,
-    selected:String?,protectedDrafts:Collection<HomeVisualPreset>,onChange:(HomeVisualPreset)->Unit,items:List<com.kingzcheung.xime.keyboard.ToolbarButtonItem> = emptyList()){
+    selected:String?,protectedDrafts:Collection<HomeVisualPreset>,onChange:(HomeVisualPreset)->Unit,items:List<com.kingzcheung.xime.keyboard.ToolbarButtonItem> = emptyList(),onSelected:(String)->Unit={}){
     val id=selected?.takeIf{it.startsWith("toolbar:") || it=="chrome:$chrome"}?:"chrome:$chrome"
     val style=preset.keys[id]?:HomeKeyStyle();val palette=if(dark)preset.dark else preset.light
     var stickerIndex by remember(id){mutableIntStateOf(0)}
@@ -26,17 +26,18 @@ internal fun HomeChromeEditor(preset:HomeVisualPreset,dark:Boolean,chrome:String
         HomeActionButton(onClick={color=true}){Text("背景颜色")}
         if(id=="chrome:candidate")HomeValueSlider("候选字号",preset.candidateTextSize.toFloat(),14f..28f,19f){onChange(preset.copy(candidateTextSize=it.toInt()))}
     }
+    if(chrome=="toolbar" || id.startsWith("toolbar:"))HomeToolbarOrderEditor(preset,items,onChange,onSelected,id,dark)
     if(id.startsWith("toolbar:"))HomeToolbarVisualEditor(style,::set)
     else {
         HomePaperGroup("独立壁纸") {
             HomeWallpaperEditor(preset.copy(wallpaper=style.wallpaper),dark,true,{set(style.copy(wallpaper=it.wallpaper))},title=if(chrome=="candidate")"候选栏壁纸" else "工具栏壁纸")
         }
-        if(id=="chrome:toolbar")HomeToolbarOrderEditor(preset,items,onChange)
+
     }
     HomeRegionShadowEditor(style,::set)
     HomePaperGroup("边框") {
-        HomeBorderEditor(style.border?:if(id.startsWith("toolbar:"))preset.keyBorder else preset.frameBorder,dark,palette.accent,{set(style.copy(border=it))})
-        HomeActionButton(onClick={set(style.copy(border=null))}){Text("边框跟随整体")}
+        HomeBorderEditor(if(id.startsWith("toolbar:"))style.border?:preset.keyBorder else preset.chromeBorder(id),dark,palette.accent,{set(style.copy(border=it))})
+        HomeActionButton(onClick={set(style.copy(border=null))}){Text("边框恢复跟随")}
     }
     HomeKeyStickersEditor(id,preset,protectedDrafts,style,stickerIndex,{stickerIndex=it},::set,canSync=false)
     HomeActionButton(onClick={onChange(preset.copy(keys=preset.keys-id))}){Text("这里恢复默认")}

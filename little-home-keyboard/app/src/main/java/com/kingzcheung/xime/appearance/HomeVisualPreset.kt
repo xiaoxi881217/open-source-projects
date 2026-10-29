@@ -155,7 +155,7 @@ data class HomeVisualPreset(
     fun validate() {
         require(schemaVersion == 1) { "请使用支持这份预设的小家键盘版本" }
         require(rowGaps.keys.all{it in setOf("qwerty","t9")} && rowGaps.values.all{it.size<=4 && it.all{v->v.isFinite() && v in 0f..20f}}){"行间距超出安全范围"}
-        require(toolbarOrder.size<=30 && toolbarOrder.distinct().size==toolbarOrder.size && toolbarOrder.all{it.length in 1..128 && it.none{c->c.isISOControl()}}){"工具栏顺序不合适"}
+        require(toolbarOrder.size<=64 && toolbarOrder.distinct().size==toolbarOrder.size && toolbarOrder.all{it.length in 1..128 && it.none{c->c.isISOControl()}}){"工具栏顺序不合适"}
         require(name.isNotBlank() && name.length <= 80) { "预设名称请填1到80个字" }
         panelStyle?.validate()
         keyBorder.validate();frameBorder.validate()
@@ -188,6 +188,10 @@ data class HomeVisualPreset(
 
     fun withGlobalShape(value:HomeKeyShape):HomeVisualPreset=copy(keyShape=value,panelStyle=panelStyle?.copy(shape=null),keys=keys.mapValues{it.value.copy(shape=null)}).also{it.validate()}
 
+    fun chromeBorder(id:String):HomeBorder {
+        val other=if(id=="chrome:toolbar")"chrome:candidate" else "chrome:toolbar"
+        return keys[id]?.border?:keys[other]?.border?:frameBorder
+    }
     fun styleFor(id:String):HomeKeyStyle?=keys[id]?:panelStyle.takeIf{id.substringBefore(':') in setOf("number","common_symbols","symbol")}
     fun panelSyncSource(preferred:String?):String = preferred?.takeIf { it.matches(Regex("(qwerty|t9):[a-z0-9_-]{1,40}")) }
         ?: keys.keys.firstOrNull { it.matches(Regex("(qwerty|t9):[a-z0-9]")) } ?: "qwerty:q"

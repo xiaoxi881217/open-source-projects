@@ -42,47 +42,30 @@ import kotlinx.coroutines.withContext
             HomeActionButton(onClick={onChange(style.copy(iconAsset=null))}){Text("恢复原图标")}
             HomeSticker.BUILTINS.forEach{(asset,label)->HomeChoiceChip(style.iconAsset==asset,{onChange(style.copy(iconAsset=asset))},label={Text(label)})}
         }
-        HomeKeyStyleScope("toolbar:icon-placement",HomeVisualPreset(keys=mapOf("toolbar:icon-placement" to style))) {
-            Box(Modifier.fillMaxWidth().height(88.dp).background(MaterialTheme.colorScheme.surfaceContainerLow,RoundedCornerShape(16.dp)).pointerInput(Unit){
-                detectTransformGestures{_,pan,zoom,_->
-                    val edge=64.dp.toPx()
-                    changed(latest.copy(labelOffsetX=(latest.labelOffsetX+pan.x/edge).coerceIn(-.4f,.4f),
-                        labelOffsetY=(latest.labelOffsetY+pan.y/edge).coerceIn(-.4f,.4f),iconSize=(latest.iconSize*zoom).coerceIn(12f,40f)))
-                }
-            },contentAlignment=Alignment.Center){
-                Box(Modifier.size(64.dp).homeKeyEffects(false),contentAlignment=Alignment.Center){HomeReplacementIcon("图标摆放预览"){Text("图标")}}
-            }
-        }
-        Text("单指拖动位置、双指缩放；点击范围仍属于原来的快捷按钮。",style=MaterialTheme.typography.bodySmall)
+        Text("在整行预览里点选，长按拖动换位，双指缩放当前图标。",style=MaterialTheme.typography.bodySmall)
         HomeValueSlider("图标大小",style.iconSize,12f..40f,24f){onChange(style.copy(iconSize=it))}
-        HomeActionButton(onClick={onChange(style.copy(labelOffsetX=0f,labelOffsetY=0f,iconSize=24f))}){Text("位置与大小回到原位")}
+        HomeActionButton(onClick={onChange(style.copy(labelOffsetX=0f,labelOffsetY=0f,iconSize=24f))}){Text("图标大小恢复默认")}
         if(status.isNotEmpty())Text(status,style=MaterialTheme.typography.bodySmall)
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
-@Composable internal fun HomeToolbarOrderEditor(preset:HomeVisualPreset,items:List<ToolbarButtonItem>,onChange:(HomeVisualPreset)->Unit) {
-    if(items.isEmpty())return
+@Composable internal fun HomeToolbarOrderEditor(preset:HomeVisualPreset,items:List<ToolbarButtonItem>,onChange:(HomeVisualPreset)->Unit,
+    onSelect:(String)->Unit={},selected:String?=null,dark:Boolean=false) {
     val latest by rememberUpdatedState(preset);val changed by rememberUpdatedState(onChange)
-    val bounds=remember{mutableStateMapOf<String,Rect>()};var point by remember{mutableStateOf(Offset.Zero)}
-    val ordered=items.sortedBy{preset.toolbarOrder.indexOf(it.id).takeIf{n->n>=0}?:Int.MAX_VALUE}
-    HomePaperGroup("快捷按钮顺序") {
-        Text("长按后拖到另一项的位置。更多与收起入口固定保留。",style=MaterialTheme.typography.bodySmall)
-        FlowRow(horizontalArrangement=Arrangement.spacedBy(6.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
-            ordered.forEach{item->key(item.id){
-                Surface(modifier=Modifier.onGloballyPositioned{bounds[item.id]=it.boundsInParent()}.pointerInput(item.id){
-                    detectDragGesturesAfterLongPress(onDragStart={point=bounds[item.id]?.center?:Offset.Zero},onDrag={change,delta->
-                        change.consume();point+=delta
-                        val target=bounds.filter{it.value.contains(point)}.keys.firstOrNull()
-                        if(target!=null && target!=item.id){
-                            val ids=items.sortedBy{latest.toolbarOrder.indexOf(it.id).takeIf{n->n>=0}?:Int.MAX_VALUE}.map{it.id}.toMutableList()
-                            val from=ids.indexOf(item.id);val to=ids.indexOf(target)
-                            if(from>=0 && to>=0){ids.add(to,ids.removeAt(from));changed(latest.copy(toolbarOrder=ids))}
-                        }
-                    })
-                },color=MaterialTheme.colorScheme.surfaceContainerLow){Text(item.label,Modifier.padding(12.dp))}
-            }}
+    HomePaperGroup("整行快捷键") {
+        CompositionLocalProvider(LocalHomePreset provides preset,LocalHomeDarkAppearance provides dark) {
+        HomeKeyStyleScope("chrome:toolbar",preset) {
+            HomeFullToolbar(items,preset.toolbarOrder,MaterialTheme.colorScheme.onSurfaceVariant,MaterialTheme.colorScheme.primary,
+                {onSelect("toolbar:"+HomeKeyIds.token(it))},onMove={from,to->
+                    val order=homeToolbarOrder(items.map{it.id},latest.toolbarOrder)
+                    changed(latest.copy(toolbarOrder=moveHomeToolbar(order,from,to)))
+                },onScale=selected?.takeIf{it.startsWith("toolbar:")}?.let{id->{zoom->
+                    val style=latest.keys[id]?:HomeKeyStyle()
+                    changed(latest.copy(keys=latest.keys+(id to style.copy(iconSize=(style.iconSize*zoom).coerceIn(12f,40f)))))
+                }})
         }
-        HomeActionButton(onClick={onChange(preset.copy(toolbarOrder=emptyList()))}){Text("恢复设置中的顺序")}
+        }
+        Text("点选按钮；长按拖到整行其他位置。按钮多时可横向滑动。",style=MaterialTheme.typography.bodySmall)
+        HomeActionButton(onClick={onChange(preset.copy(toolbarOrder=emptyList()))}){Text("恢复默认位置")}
     }
 }

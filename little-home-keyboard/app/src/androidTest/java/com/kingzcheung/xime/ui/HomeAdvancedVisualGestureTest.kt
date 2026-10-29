@@ -23,6 +23,26 @@ import java.util.concurrent.atomic.AtomicInteger
 /** 合成布局回归；编译与执行结果分别记录，不操作本人手机。 */
 class HomeAdvancedVisualGestureTest {
     @get:Rule val compose=createComposeRule()
+    @Test fun completeToolbarMovesActualHitTargetAndKeepsActions() {
+        val more=AtomicInteger();val clipboard=AtomicInteger()
+        var order by mutableStateOf(listOf("more_menu","clipboard","hide_keyboard"))
+        compose.setContent { MaterialTheme {
+            CompositionLocalProvider(LocalHomePreset provides HomeVisualPreset()) {
+                Box(Modifier.width(300.dp)) {
+                    HomeFullToolbar(listOf(ToolbarButtonItem.Builtin(ToolbarButton.CLIPBOARD)),order,Color.Black,Color.Red,
+                        {id->if(id=="more_menu")more.incrementAndGet() else if(id=="clipboard")clipboard.incrementAndGet()})
+                }
+            }
+        } }
+        val original=compose.onNodeWithContentDescription("打开更多").fetchSemanticsNode().boundsInRoot
+        compose.runOnIdle { order=listOf("clipboard","hide_keyboard","more_menu") }
+        val moved=compose.onNodeWithContentDescription("打开更多").fetchSemanticsNode().boundsInRoot
+        assertTrue(moved.left>original.left)
+        compose.onNodeWithContentDescription("打开更多").performTouchInput{click()}
+        assertEquals(1,more.get());assertEquals(0,clipboard.get())
+        compose.onNodeWithContentDescription(ToolbarButton.CLIPBOARD.label).performTouchInput{click()}
+        assertEquals(1,clipboard.get())
+    }
     @Test fun resizedKeysKeepDisjointSlotsAndCenteredHeight() {
         val left=AtomicInteger();val right=AtomicInteger();var density=1f
         val preset=HomeVisualPreset(keys=mapOf("qwerty:q" to HomeKeyStyle(widthScale=2f,heightScale=.5f)))

@@ -36,7 +36,7 @@ internal fun HomeKeyStyleScope(id: String, preset: HomeVisualPreset? = LocalHome
     val size = remember(id) { mutableStateOf(IntSize.Zero) }
     val pressed = remember(id) { mutableStateOf(false) }
     val kind=style?.shape?:if(stableId.startsWith("chrome:"))com.kingzcheung.xime.appearance.HomeKeyShape.ROUNDED else preset?.keyShape?:com.kingzcheung.xime.appearance.HomeKeyShape.ROUNDED
-    val border=style?.border?:if(stableId.startsWith("chrome:"))preset?.frameBorder else preset?.keyBorder
+    val border=if(stableId.startsWith("chrome:"))preset?.chromeBorder(stableId) else style?.border?:preset?.keyBorder
     CompositionLocalProvider(LocalHomeKeyId provides stableId, LocalHomeKeyStyle provides style,
         LocalHomeKeySize provides size, LocalHomeKeyPressed provides pressed,
         LocalHomeKeyShape provides kind,LocalHomeKeyBorder provides (border?:com.kingzcheung.xime.appearance.HomeBorder()),

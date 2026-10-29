@@ -67,7 +67,9 @@ internal fun HomePaperTabs(selected:String,onSelect:(String)->Unit){
             listOf("overall" to "整体","key" to "按键","shadow" to "阴影","sticker" to "贴纸","motion" to "动态","chrome" to "上方","presets" to "预设").forEach{(id,name)->
                 val color=if(selected==id)MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 TextButton(onClick={onSelect(id)},contentPadding=PaddingValues(horizontal=8.dp),shape=RoundedCornerShape(14.dp),
-                    modifier=Modifier.widthIn(min=44.dp).height(40.dp).background(if(selected==id)MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,RoundedCornerShape(14.dp))){Text(name,color=color,fontSize=12.sp)}
+                    modifier=Modifier.widthIn(min=44.dp).height(40.dp).drawBehind{
+                        if(selected==id)drawLine(color,Offset(5.dp.toPx(),size.height-2.dp.toPx()),Offset(size.width-5.dp.toPx(),size.height-2.dp.toPx()),1.dp.toPx(),pathEffect=PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(),3.dp.toPx())))
+                    }){Text(name,color=color,fontSize=12.sp)}
             }
         }
         HomePaperRule()

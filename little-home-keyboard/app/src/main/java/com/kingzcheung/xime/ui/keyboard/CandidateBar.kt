@@ -80,6 +80,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.kingzcheung.xime.appearance.*
 import com.kingzcheung.xime.R
 import com.kingzcheung.xime.clipboard.ClipboardItem
 import com.kingzcheung.xime.keyboard.KeyboardPage
@@ -155,7 +156,10 @@ fun CandidateBar(
     val showComments = SettingsPreferences.showCandidateComments(context)
     val inputTextLocation = SettingsPreferences.getInputTextLocation(context)
     val showInputBoxStyle = inputTextLocation == SettingsPreferences.INPUT_TEXT_INPUT_BOX
-    val candidateTextSize = homeCandidateTextSize()
+    val chromeId=if(state is CandidateBarState.Idle)"chrome:toolbar" else "chrome:candidate"
+    val chromeBorder=(LocalHomePreset.current?:HomePresetStore.active)?.chromeBorder(chromeId)?:HomeBorder()
+    val chromeInset=homeChromeInset(chromeBorder)
+    val candidateTextSize=fittedHomeCandidateTextSize(homeCandidateTextSize().toFloat(),LocalDensity.current.fontScale,chromeBorder)
     val candidateFontFamily = AppFonts.candidateFontFamily
     val commentFontFamily = AppFonts.commentFontFamily
 
@@ -290,7 +294,6 @@ fun CandidateBar(
     }
     val showPreeditBubble = showInputTextRow && preeditBubbleText.isNotEmpty() && !showInputBoxStyle
 
-    val chromeId=if(state is CandidateBarState.Idle)"chrome:toolbar" else "chrome:candidate"
     HomeStickerHost(modifier) { chromeModifier ->
     HomeKeyStyleScope(chromeId) {
     val chromeStyle=LocalHomeKeyStyle.current
@@ -310,7 +313,7 @@ fun CandidateBar(
             .background(chromeVisuals.backgroundColor)
             .homeRegionWallpaper()
             .homeKeyInnerShadows()
-            .padding(horizontal = horizontalPadding),
+            .padding(horizontal = maxOf(horizontalPadding,(chromeInset+2f).dp),vertical=chromeInset.dp),
         verticalArrangement = Arrangement.Center
     ) {
         if (isVoiceSticky) {
@@ -364,6 +367,14 @@ fun CandidateBar(
         // 栏内不再为编码保留布局空间——打字态与联想态的候选行共用同一垂直位置。
         preeditBubbleText = displayText
         preeditBubbleCaret = (state as? CandidateBarState.ChineseCandidates)?.preeditCaretPos ?: -1
+
+        if(state is CandidateBarState.Idle && inlineSuggestions.isEmpty() && LocalHomePreset.current!=null &&
+            !(page is KeyboardPage.Overlay && page.route is OverlayRoute.SchemaList)) {
+            HomeFullToolbar(toolbarActions.map{it.item},LocalHomePreset.current?.toolbarOrder.orEmpty(),iconButtonTint,chromeVisuals.accentColor,
+                {id->when(id){"more_menu"->callbacks.onLogoClick?.invoke();"hide_keyboard"->callbacks.onHideKeyboard?.invoke();else->toolbarActions.firstOrNull{it.item.id==id}?.onClick?.invoke()}},
+                showMore=showLeftIcon,showHide=callbacks.onHideKeyboard!=null)
+            return@Column
+        }
 
         Row(
             modifier = Modifier
