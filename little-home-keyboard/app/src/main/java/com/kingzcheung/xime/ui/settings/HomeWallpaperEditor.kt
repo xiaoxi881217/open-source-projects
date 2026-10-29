@@ -26,17 +26,17 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
-internal fun HomeWallpaperEditor(preset:HomeVisualPreset,dark:Boolean,enabled:Boolean,onChange:(HomeVisualPreset)->Unit){
+internal fun HomeWallpaperEditor(preset:HomeVisualPreset,dark:Boolean,enabled:Boolean,onChange:(HomeVisualPreset)->Unit,title:String="键盘底下的壁纸"){
  val context=LocalContext.current;val scope=rememberCoroutineScope();var busy by remember{mutableStateOf(false)};var status by remember{mutableStateOf("")};var editing by remember{mutableStateOf(false)}
  var gesture by remember{mutableStateOf<HomeWallpaper?>(null)};val latest by rememberUpdatedState(preset);val changed by rememberUpdatedState(onChange)
  val picker=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()){uri->
   if(uri!=null)scope.launch{busy=true;runCatching{withContext(Dispatchers.IO){requireNotNull(context.contentResolver.openInputStream(uri)).use{HomeStickerAssets.importImage(HomeStickerAssets.readInput(it,wallpaper=true),wallpaper=true)}}}.onSuccess{changed(latest.copy(wallpaper=HomeWallpaper(it)));status="壁纸放好了，可以直接拖动和双指缩放"}.onFailure{status="这张壁纸无法导入，请选8MB以内、尺寸合适的PNG/JPEG/WebP"};busy=false}
  }
- Text("键盘底下的壁纸",style=MaterialTheme.typography.titleMedium)
- Row{TextButton(enabled=enabled && !busy,onClick={picker.launch(arrayOf("image/png","image/jpeg","image/webp"))}){Text(if(busy)"正在整理图片…" else "选一张壁纸")}
-  TextButton(enabled=enabled && preset.wallpaper!=null && !busy,onClick={onChange(preset.copy(wallpaper=null))}){Text("拿走壁纸")}}
+ Text(title,style=MaterialTheme.typography.titleMedium)
+ Row{HomeActionButton(enabled=enabled && !busy,onClick={picker.launch(arrayOf("image/png","image/jpeg","image/webp"))}){Text(if(busy)"正在整理图片…" else "选一张壁纸")}
+  HomeActionButton(enabled=enabled && preset.wallpaper!=null && !busy,onClick={onChange(preset.copy(wallpaper=null))}){Text("拿走壁纸")}}
  preset.wallpaper?.let{wallpaper->
-  TextButton(onClick={editing=!editing}){Text(if(editing)"收起壁纸摆放" else "手势摆放壁纸")}
+  HomeActionButton(onClick={editing=!editing}){Text(if(editing)"收起壁纸摆放" else "手势摆放壁纸")}
   if(editing){
    val display=preset.copy(wallpaper=gesture?:wallpaper)
    WallpaperPlacement(display,dark,Modifier.fillMaxWidth().height(160.dp).clipToBounds().pointerInput(Unit){
@@ -49,7 +49,7 @@ internal fun HomeWallpaperEditor(preset:HomeVisualPreset,dark:Boolean,enabled:Bo
    Text("单指移动、双指缩放，松手合并一次修改；空出来的区域露出背景色。",style=MaterialTheme.typography.bodySmall)
   }
   HomeValueSlider("壁纸不透明度",wallpaper.opacity,0f..1f,1f){onChange(preset.copy(wallpaper=wallpaper.copy(opacity=it)))}
-  TextButton(onClick={onChange(preset.copy(wallpaper=HomeWallpaper(wallpaper.asset)))}){Text("壁纸回到居中铺满")}
+  HomeActionButton(onClick={onChange(preset.copy(wallpaper=HomeWallpaper(wallpaper.asset)))}){Text("壁纸回到居中铺满")}
  }
  if(status.isNotEmpty())Text(status,style=MaterialTheme.typography.bodySmall)
  Text("图片只存本机并随完整装扮导出；不会传到小家。",style=MaterialTheme.typography.bodySmall)

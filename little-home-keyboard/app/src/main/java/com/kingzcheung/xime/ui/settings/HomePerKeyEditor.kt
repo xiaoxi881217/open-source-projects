@@ -45,8 +45,8 @@ internal fun HomePerKeyEditor(preset: HomeVisualPreset, dark: Boolean, onChange:
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
             Text(title(selected),Modifier.weight(1f),style=MaterialTheme.typography.titleSmall)
-            TextButton(onClick={chooseKey=true}){Text("换一颗")}
-            TextButton(onClick={fineGestures=!fineGestures}){Text(if(fineGestures)"收起微调" else "手势微调")}
+            HomeActionButton(onClick={chooseKey=true}){Text("换一颗")}
+            HomeActionButton(onClick={fineGestures=!fineGestures}){Text(if(fineGestures)"收起微调" else "手势微调")}
         }
         if(fineGestures)HomeSingleKeyPreview(preset, sourceId, title(selected), dark,
             onStickerChange={ set(style.copy(sticker=it)) },onLabelChange=if(layout=="toolbar")null else {next->set(style.copy(labelOffsetX=next.labelOffsetX,labelOffsetY=next.labelOffsetY,labelFontSize=next.labelFontSize))},
@@ -54,70 +54,72 @@ internal fun HomePerKeyEditor(preset: HomeVisualPreset, dark: Boolean, onChange:
         if(section in listOf("all","key")){
         HomeHintEditor(style,palette,dark,::set,{hintGesture=true;fineGestures=true},{sync=it})
         FlowRow(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-            HomeKeyShape.entries.forEach{kind->FilterChip((style.shape?:preset.keyShape)==kind,{set(style.copy(shape=kind))},label={Text(kind.label)})}
-            TextButton(onClick={sync=HomeStyleProperty.SHAPE}){Text("同步形状")}
+            HomeKeyShape.entries.forEach{kind->HomeChoiceChip((style.shape?:preset.keyShape)==kind,{set(style.copy(shape=kind))},label={Text(kind.label)})}
+            HomeActionButton(onClick={sync=HomeStyleProperty.SHAPE}){Text("同步形状")}
         }
         HomePaperGroup("这颗键的边框") {
             HomeBorderEditor(style.border?:preset.keyBorder,dark,palette.accent,{set(style.copy(border=it))},{sync=it})
-            TextButton(onClick={set(style.copy(border=null,shape=null))}){Text("边框与形状跟随整体")}
+            HomeActionButton(onClick={set(style.copy(border=null,shape=null))}){Text("边框与形状跟随整体")}
         }
         FlowRow(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-            OutlinedButton(onClick={set(style.copy(labelFontSize=((style.labelFontSize?:18f)-2f).coerceIn(2f,32f)))}){Text("A−")}
-            TextButton(onClick={preciseLabel=true}){Text("文字字号 ${style.labelFontSize?.let { "%.1f".format(it) }?:"跟随原设置"}")}
-            OutlinedButton(onClick={set(style.copy(labelFontSize=((style.labelFontSize?:18f)+2f).coerceIn(2f,32f)))}){Text("A＋")}
-            TextButton(onClick={sync=HomeStyleProperty.LABEL_FONT_SIZE}){Text("同步字号")}
+            HomeOutlinedAction(onClick={set(style.copy(labelFontSize=((style.labelFontSize?:18f)-2f).coerceIn(2f,32f)))}){Text("A−")}
+            HomeActionButton(onClick={preciseLabel=true}){Text("文字字号 ${style.labelFontSize?.let { "%.1f".format(it) }?:"跟随原设置"}")}
+            HomeOutlinedAction(onClick={set(style.copy(labelFontSize=((style.labelFontSize?:18f)+2f).coerceIn(2f,32f)))}){Text("A＋")}
+            HomeActionButton(onClick={sync=HomeStyleProperty.LABEL_FONT_SIZE}){Text("同步字号")}
         }
         FlowRow {
-            TextButton(onClick={sync=HomeStyleProperty.LABEL_POSITION}){Text("同步文字位置")}
-            TextButton(onClick={set(style.copy(labelOffsetX=0f,labelOffsetY=0f))}){Text("文字回到原位")}
-            TextButton(onClick={preciseLabel=!preciseLabel}){Text(if(preciseLabel)"收起精确数值" else "文字精确数值")}
+            HomeActionButton(onClick={sync=HomeStyleProperty.LABEL_POSITION}){Text("同步文字位置")}
+            HomeActionButton(onClick={set(style.copy(labelOffsetX=0f,labelOffsetY=0f))}){Text("文字回到原位")}
+            HomeActionButton(onClick={preciseLabel=!preciseLabel}){Text(if(preciseLabel)"收起精确数值" else "文字精确数值")}
         }
         if(preciseLabel) {
             HomeValueSlider("主文字字号（与候选词分开）",style.labelFontSize?:18f,2f..32f,18f){set(style.copy(labelFontSize=it))}
-            TextButton(onClick={set(style.copy(labelFontSize=null))}){Text("字号跟随原设置")}
+            HomeActionButton(onClick={set(style.copy(labelFontSize=null))}){Text("字号跟随原设置")}
             HomeValueSlider("文字横向位置",style.labelOffsetX,-.4f.. .4f,0f){set(style.copy(labelOffsetX=it))}
-            TextButton(onClick={sync=HomeStyleProperty.LABEL_X}){Text("只同步横向数值")}
+            HomeActionButton(onClick={sync=HomeStyleProperty.LABEL_X}){Text("只同步横向数值")}
             HomeValueSlider("文字纵向位置",style.labelOffsetY,-.4f.. .4f,0f){set(style.copy(labelOffsetY=it))}
-            TextButton(onClick={sync=HomeStyleProperty.LABEL_Y}){Text("只同步纵向数值")}
+            HomeActionButton(onClick={sync=HomeStyleProperty.LABEL_Y}){Text("只同步纵向数值")}
         }
         }
         if(section in listOf("all","sticker"))HomeStickerEditor(sourceId,preset,protectedDrafts,{ set(style.copy(sticker=it)) },{ sync=it })
         if(section in listOf("all","key")){
         HomeValueSlider("键帽底色不透明度（0透明 / 1实色）",style.keyOpacity,0f..1f,1f){set(style.copy(keyOpacity=it))}
-        TextButton(onClick={sync=HomeStyleProperty.KEY_OPACITY}){Text("只同步键帽透明度")}
+        HomeActionButton(onClick={sync=HomeStyleProperty.KEY_OPACITY}){Text("只同步键帽透明度")}
         HomeValueSlider("键帽磨砂度",style.frost,0f..1f,0f){set(style.copy(frost=it))}
-        TextButton(onClick={sync=HomeStyleProperty.FROST}){Text("只同步磨砂度")}
+        HomeActionButton(onClick={sync=HomeStyleProperty.FROST}){Text("只同步磨砂度")}
         Text("降低底色不透明度，才能看见背后的壁纸和磨砂；字母、贴纸保持清晰。",style=MaterialTheme.typography.bodySmall)
         val backgroundProperty = if (dark) HomeStyleProperty.BACKGROUND_DARK else HomeStyleProperty.BACKGROUND_LIGHT
         val textProperty = if (dark) HomeStyleProperty.TEXT_DARK else HomeStyleProperty.TEXT_LIGHT
         listOf(backgroundProperty to "按键颜色", textProperty to "文字颜色").forEach { (property, title) ->
             Row {
-                OutlinedButton(onClick = { colorEdit = property }, modifier = Modifier.weight(1f)) { Text(title) }
-                TextButton(onClick = { sync = property }) { Text("同步这一项") }
+                HomeOutlinedAction(onClick = { colorEdit = property }, modifier = Modifier.weight(1f)) { Text(title) }
+                HomeActionButton(onClick = { sync = property }) { Text("同步这一项") }
             }
         }
-        if((style.shape?:preset.keyShape)==HomeKeyShape.ROUNDED)HomeValueSlider("这颗键的圆角", (style.cornerRadius ?: preset.cornerRadius).toFloat(), 0f..24f, preset.cornerRadius.toFloat()) {
+        HomeValueSlider("大字不透明度",style.textOpacity,0f..1f,1f){set(style.copy(textOpacity=it))}
+        HomeActionButton(onClick={sync=HomeStyleProperty.TEXT_OPACITY}){Text("只同步大字透明度")}
+        if((style.shape?:preset.keyShape)!=HomeKeyShape.CIRCLE)HomeValueSlider("这颗键的圆角", (style.cornerRadius ?: preset.cornerRadius).toFloat(), 0f..24f, preset.cornerRadius.toFloat()) {
             set(style.copy(cornerRadius = it.roundToInt()))
         }
         Row {
-            TextButton(onClick = { set(style.copy(cornerRadius=null)) }) { Text("圆角跟随整体") }
-            TextButton(onClick = { sync = HomeStyleProperty.CORNER_RADIUS }) { Text("只同步圆角数值") }
-            TextButton(onClick = { sync = HomeStyleProperty.ALL }) { Text("同步这颗键的整套样式") }
+            HomeActionButton(onClick = { set(style.copy(cornerRadius=null)) }) { Text("圆角跟随整体") }
+            HomeActionButton(onClick = { sync = HomeStyleProperty.CORNER_RADIUS }) { Text("只同步圆角数值") }
+            HomeActionButton(onClick = { sync = HomeStyleProperty.ALL }) { Text("同步这颗键的整套样式") }
         }
-        TextButton(onClick = { onChange(preset.copy(keys = preset.keys - sourceId)) }) { Text("这颗键恢复跟随主题") }
+        HomeActionButton(onClick = { onChange(preset.copy(keys = preset.keys - sourceId)) }) { Text("这颗键恢复跟随主题") }
         }
         if(section in listOf("all","shadow","motion"))HomeKeyEffectsEditor(style, preset.animationsEnabled, ::set,
             { onChange(preset.copy(animationsEnabled = it)) }, { property, side -> syncSide = side; sync = property },section=section,
             pressPopupEnabled=preset.pressPopupEnabled,onPressPopupChanged={onChange(preset.copy(pressPopupEnabled=it))})
-        if(layout!="toolbar"&&preset.panelStyle!=null)TextButton(onClick={onChange(preset.copy(panelStyle=null))}){Text("数字 / 符号恢复默认美化")}
+        if(layout!="toolbar"&&preset.panelStyle!=null)HomeActionButton(onClick={onChange(preset.copy(panelStyle=null))}){Text("数字 / 符号恢复默认美化")}
         if(section in listOf("key","all"))Text("整套同步包含浅深色按键、文字、圆角、四边阴影、动态和贴纸。未单独设定的颜色同步为“跟随主题”，不会修改动作、长按或布局。",
             style = MaterialTheme.typography.bodySmall)
     }
     if(chooseKey)AlertDialog(onDismissRequest={chooseKey=false},title={Text("选一颗")},text={
         FlowRow(Modifier.verticalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)){
-            ids.forEach{id->FilterChip(selected==id,{onSelectedKey("$layout:$id");chooseKey=false},label={Text(title(id))})}
+            ids.forEach{id->HomeChoiceChip(selected==id,{onSelectedKey("$layout:$id");chooseKey=false},label={Text(title(id))})}
         }
-    },confirmButton={TextButton(onClick={chooseKey=false}){Text("好了")}})
+    },confirmButton={HomeActionButton(onClick={chooseKey=false}){Text("好了")}})
     colorEdit?.let { property ->
         val initial = when (property) {
             HomeStyleProperty.BACKGROUND_LIGHT -> style.backgroundLight ?: preset.light.key
@@ -146,10 +148,10 @@ internal fun HomePerKeyEditor(preset: HomeVisualPreset, dark: Boolean, onChange:
                 Column(Modifier.heightIn(max = 380.dp).verticalScroll(rememberScrollState())) {
                     Text("从 ${title(selected)} 同步到下列按键。其他属性保持原样，可用页面顶部的撤销恢复。")
                     Row {
-                        TextButton(onClick = { targets = ids.toSet() }) { Text(if(layout=="toolbar")"全选快捷图标" else "全选本键盘") }
-                        TextButton(onClick = { targets = emptySet() }) { Text("取消全选") }
+                        HomeActionButton(onClick = { targets = ids.toSet() }) { Text(if(layout=="toolbar")"全选快捷图标" else "全选本键盘") }
+                        HomeActionButton(onClick = { targets = emptySet() }) { Text("取消全选") }
                     }
-                    FilterChip(gestureMode, { gestureMode = !gestureMode }, label = { Text("划过多选") })
+                    HomeChoiceChip(gestureMode, { gestureMode = !gestureMode }, label = { Text("划过多选") })
                     Text(if (gestureMode) "划过即可选择；从已选按键开始划，会一路取消。关闭此模式可恢复页面滚动。"
                         else "可以点选，也可以打开“划过多选”用手势选择。")
                     FlowRow(modifier = Modifier.onGloballyPositioned { gridCoordinates = it }
@@ -191,7 +193,7 @@ internal fun HomePerKeyEditor(preset: HomeVisualPreset, dark: Boolean, onChange:
                             })
                         }, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         ids.forEach { id ->
-                            FilterChip(id in targets, { targets = if (id in targets) targets - id else targets + id },
+                            HomeChoiceChip(id in targets, { targets = if (id in targets) targets - id else targets + id },
                                 modifier = Modifier.onGloballyPositioned { coordinates ->
                                     val rect = coordinates.boundsInRoot()
                                     bounds[id] = HomeSelectionRect(rect.left, rect.top, rect.right, rect.bottom)
@@ -201,11 +203,11 @@ internal fun HomePerKeyEditor(preset: HomeVisualPreset, dark: Boolean, onChange:
                     Text(if(layout=="toolbar")"将改动 ${targets.size} 个快捷图标。" else "将改动 ${targets.size} 颗按键；只作用于当前键盘类型。")
                 }
             }, confirmButton = {
-                TextButton(enabled = targets.isNotEmpty(), onClick = {
+                HomeActionButton(enabled = targets.isNotEmpty(), onClick = {
                     onChange(preset.synchronize(sourceId, targets.map { "$layout:$it" }.toSet(), property, edge))
                     sync = null
                 }) { Text("确认同步") }
-            }, dismissButton = { TextButton(onClick = { sync = null }) { Text("先不改") } })
+            }, dismissButton = { HomeActionButton(onClick = { sync = null }) { Text("先不改") } })
     }
 }
 

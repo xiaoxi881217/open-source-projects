@@ -13,7 +13,7 @@ import com.kingzcheung.xime.appearance.*
 internal fun HomeBorderEditor(value:HomeBorder,dark:Boolean,fallback:Long,onChange:(HomeBorder)->Unit,onSync:((HomeStyleProperty)->Unit)?=null) {
     var color by remember{mutableStateOf(false)}
     FlowRow(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-        HomeBorderKind.entries.forEach{kind->FilterChip(value.kind==kind,{onChange(value.copy(kind=kind))},label={Text(kind.label)})}
+        HomeBorderKind.entries.forEach{kind->HomeChoiceChip(value.kind==kind,{onChange(value.copy(kind=kind))},label={Text(kind.label)})}
     }
     if(value.kind!=HomeBorderKind.NONE) {
         Row(verticalAlignment=Alignment.CenterVertically) {
@@ -30,12 +30,12 @@ internal fun HomeBorderEditor(value:HomeBorder,dark:Boolean,fallback:Long,onChan
         }
     }
     onSync?.let{sync->Row{
-        TextButton(onClick={sync(HomeStyleProperty.BORDER_KIND)}){Text("同步线型")}
-        TextButton(onClick={sync(HomeStyleProperty.BORDER)}){Text("同步整套边框")}
+        HomeActionButton(onClick={sync(HomeStyleProperty.BORDER_KIND)}){Text("同步线型")}
+        HomeActionButton(onClick={sync(HomeStyleProperty.BORDER)}){Text("同步整套边框")}
     }}
     if(color)HomeColorDialog((if(dark)value.colorDark else value.colorLight)?:fallback,{color=false}){
         onChange(if(dark)value.copy(colorDark=it) else value.copy(colorLight=it));color=false
     }
 }
 
-@Composable private fun HomeBorderSync(label:String,onClick:()->Unit){TextButton(onClick=onClick){Text(label,style=MaterialTheme.typography.labelSmall)}}
+@Composable private fun HomeBorderSync(label:String,onClick:()->Unit){HomeActionButton(onClick=onClick){Text(label,style=MaterialTheme.typography.labelSmall)}}

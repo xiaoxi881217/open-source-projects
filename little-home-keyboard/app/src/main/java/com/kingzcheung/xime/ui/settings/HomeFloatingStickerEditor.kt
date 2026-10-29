@@ -14,8 +14,8 @@ import java.util.UUID
 internal fun HomeFloatingStickerEditor(preset:HomeVisualPreset,selected:String?,onSelect:(String?)->Unit,
     protectedDrafts:Collection<HomeVisualPreset>,onChange:(HomeVisualPreset)->Unit){
     Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)){
-        preset.floatingStickers.forEachIndexed{i,s->FilterChip(s.id==selected,{onSelect(s.id)},label={Text("贴纸${i+1}")})}
-        TextButton(enabled=preset.floatingStickers.size<12,onClick={val s=HomeFloatingSticker(UUID.randomUUID().toString());onChange(preset.copy(floatingStickers=preset.floatingStickers+s));onSelect(s.id)}){Text("＋自由贴纸")}
+        preset.floatingStickers.forEachIndexed{i,s->HomeChoiceChip(s.id==selected,{onSelect(s.id)},label={Text("贴纸${i+1}")})}
+        HomeActionButton(enabled=preset.floatingStickers.size<12,onClick={val s=HomeFloatingSticker(UUID.randomUUID().toString());onChange(preset.copy(floatingStickers=preset.floatingStickers+s));onSelect(s.id)}){Text("＋自由贴纸")}
     }
     val item=preset.floatingStickers.firstOrNull{it.id==selected}?:return
     Text("在上方预览拖动、双指缩放和旋转。",style=MaterialTheme.typography.bodySmall)
@@ -23,7 +23,7 @@ internal fun HomeFloatingStickerEditor(preset:HomeVisualPreset,selected:String?,
         onChange(preset.copy(floatingStickers=if(s==null)preset.floatingStickers.filter{it.id!=item.id} else preset.floatingStickers.map{if(it.id==item.id)it.copy(sticker=s.copy(clipToKey=false)) else it}))
     },{},value=item.sticker,canSync=false,supportsCover=false)
     Row{
-        TextButton(onClick={onChange(preset.copy(floatingStickers=preset.floatingStickers.filter{it.id!=item.id}+item))}){Text("移到最上层")}
-        TextButton(onClick={onChange(preset.copy(floatingStickers=preset.floatingStickers.filter{it.id!=item.id}))}){Text("移除这张")}
+        HomeActionButton(onClick={onChange(preset.copy(floatingStickers=preset.floatingStickers.filter{it.id!=item.id}+item))}){Text("移到最上层")}
+        HomeActionButton(onClick={onChange(preset.copy(floatingStickers=preset.floatingStickers.filter{it.id!=item.id}))}){Text("移除这张")}
     }
 }

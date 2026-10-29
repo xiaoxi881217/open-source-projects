@@ -377,7 +377,8 @@ fun KeyboardLayout(
                     } else {
                         val rows = remember(rowsLayout.rows) { normalizeQwertyRows(rowsLayout.rows) }
                         val columns = rowsLayout.columns ?: rows.firstOrNull()?.keys?.size ?: 10
-                        rows.forEach { row ->
+                        HomeKeyboardRows("qwerty",rows.size,Modifier.fillMaxSize()) { index,rowModifier ->
+                            val row=rows[index]
                             // 行宽由行声明或键盘级策略决定（[rowWidthFraction]）：显式 width 优先；
                             // uniform 按列对齐（行宽 = 键数/列数，键宽与首行一致、行居中）；
                             // stretch 或含功能键的行铺满均分。比例 < 1 时才需要居中缩进。
@@ -390,7 +391,8 @@ fun KeyboardLayout(
                             QwertyRow(
                                 ids = row.keys,
                                 env = env,
-                                modifier = Modifier.weight(1f).then(indent),
+                                modifier = rowModifier.then(indent),
+                                reserveVerticalInsets=false,
                             )
                         }
                     }
@@ -814,12 +816,14 @@ internal fun QwertyRow(
     ids: List<String>,
     env: QwertyRowEnv,
     modifier: Modifier = Modifier,
+    reserveVerticalInsets:Boolean=true,
 ) {
-    val rowInset=LocalHomePreset.current?.spacingY?.dp
+    val hasPreset=LocalHomePreset.current!=null
+    val rowInset=LocalHomePreset.current?.spacingY?.dp?.takeIf{reserveVerticalInsets}
     val keyPadding=LocalKeyVisualPadding.current
     val direction=androidx.compose.ui.platform.LocalLayoutDirection.current
     // 行距在行容器预留，内部按键只保留横向间距，避免功能键各自消费纵向留白。
-    val insidePadding=if(rowInset!=null)PaddingValues(
+    val insidePadding=if(hasPreset)PaddingValues(
         start=keyPadding.calculateStartPadding(direction),end=keyPadding.calculateEndPadding(direction)
     ) else keyPadding
     CompositionLocalProvider(LocalKeyVisualPadding provides insidePadding) {
@@ -2099,43 +2103,33 @@ private fun LandscapeKeyboardContent(
             .fillMaxSize()
             .padding(vertical = 2.dp, horizontal = if (isTablet()) 16.dp else 4.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxHeight()
-                .weight(0.42f)
-                .padding(start = 4.dp),
-        ) {
-            landscapeRows.forEachIndexed { idx, row ->
+        HomeKeyboardRows("qwerty",landscapeRows.size,
+            Modifier.fillMaxHeight().weight(0.42f).padding(start=4.dp)) { idx,rowModifier ->
+                val row=landscapeRows[idx]
                 val (left, _) = splitRowForLandscape(row.keys)
                 Box(
                     modifier = Modifier
-                        .weight(1f)
+                        .then(rowModifier)
                         .padding(start = if (compactStyle && idx < landscapeRows.lastIndex) staggerStep * idx else 0.dp)
                 ) {
-                    QwertyRow(ids = left, env = env)
+                    QwertyRow(ids = left, env = env,reserveVerticalInsets=false)
                 }
-            }
         }
 
         val sectionGap=LocalHomePreset.current?.sectionSpacing
         Spacer(modifier = if(sectionGap!=null)Modifier.width(sectionGap.dp) else Modifier.weight(0.16f))
 
-        Column(
-            modifier = Modifier
-                .fillMaxHeight()
-                .weight(0.42f)
-                .padding(end = 4.dp),
-        ) {
-            landscapeRows.forEachIndexed { idx, row ->
+        HomeKeyboardRows("qwerty",landscapeRows.size,
+            Modifier.fillMaxHeight().weight(0.42f).padding(end=4.dp)) { idx,rowModifier ->
+                val row=landscapeRows[idx]
                 val (_, right) = splitRowForLandscape(row.keys)
                 Box(
                     modifier = Modifier
-                        .weight(1f)
+                        .then(rowModifier)
                         .padding(end = if (compactStyle && idx < landscapeRows.lastIndex) staggerStep * idx else 0.dp)
                 ) {
-                    QwertyRow(ids = right, env = env)
+                    QwertyRow(ids = right, env = env,reserveVerticalInsets=false)
                 }
-            }
         }
     }
 }

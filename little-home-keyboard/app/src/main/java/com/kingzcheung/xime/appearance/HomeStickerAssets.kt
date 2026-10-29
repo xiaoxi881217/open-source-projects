@@ -71,9 +71,12 @@ object HomeStickerAssets {
     }
     fun export(preset: HomeVisualPreset): ByteArray { validateReferences(preset);return HomeStickerBundleCodec.encode(preset,HomeStickerBundleCodec.imageIds(preset).associateWith { id -> file(id).readBytes() }) }
     fun install(bundle: HomeStickerPackage): HomeVisualPreset {
-        val remap=bundle.preset.stickers().mapNotNull{it.asset.takeIf{a->a.startsWith("image:")}?.substringAfter(":")}.toSet().associateWith { importImage(requireNotNull(bundle.images[it])) }
-        val wallpaper=bundle.preset.wallpaper?.let{it.copy(asset=importImage(requireNotNull(bundle.images[it.asset.substringAfter(":")]),wallpaper=true))}
-        fun installStyle(style:HomeKeyStyle)=style.copy(sticker=style.sticker?.let{sticker->remap[sticker.asset.removePrefix("image:")]?.let{sticker.copy(asset=it)}?:sticker})
+        val remap=HomeStickerBundleCodec.imageAssets(bundle.preset).map{it.substringAfter(':')}.associateWith { importImage(requireNotNull(bundle.images[it])) }
+        val walls=bundle.preset.wallpapers().map{it.asset.substringAfter(':')}.distinct().associateWith{importImage(requireNotNull(bundle.images[it]),wallpaper=true)}
+        fun installWallpaper(w:HomeWallpaper?)=w?.copy(asset=requireNotNull(walls[w.asset.substringAfter(':')]))
+        val wallpaper=installWallpaper(bundle.preset.wallpaper)
+        fun installStyle(style:HomeKeyStyle)=style.copy(sticker=style.sticker?.let{sticker->remap[sticker.asset.removePrefix("image:")]?.let{sticker.copy(asset=it)}?:sticker},
+            iconAsset=style.iconAsset?.let{remap[it.removePrefix("image:")]?:it},wallpaper=installWallpaper(style.wallpaper))
         val preset=bundle.preset.copy(floatingStickers=bundle.preset.floatingStickers.map{f->f.copy(sticker=remap[f.sticker.asset.removePrefix("image:")]?.let{f.sticker.copy(asset=it)}?:f.sticker)},wallpaper=wallpaper,panelStyle=bundle.preset.panelStyle?.let(::installStyle),keys=bundle.preset.keys.mapValues{installStyle(it.value)})
         validateReferences(preset);return preset
     }

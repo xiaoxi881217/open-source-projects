@@ -42,11 +42,11 @@ internal fun HomePaperFrame(content:@Composable ()->Unit){
 internal fun HomePaperHeader(busy:Boolean,onBack:()->Unit,canUndo:Boolean,canRedo:Boolean,onUndo:()->Unit,onRedo:()->Unit,onTrial:()->Unit){
     Column(Modifier.background(MaterialTheme.colorScheme.background).windowInsetsPadding(WindowInsets.statusBars)){
         Row(Modifier.fillMaxWidth().height(52.dp).padding(horizontal=4.dp),verticalAlignment=Alignment.CenterVertically){
-            IconButton(enabled=!busy,onClick=onBack){Icon(Icons.AutoMirrored.Filled.ArrowBack,"返回",Modifier.size(20.dp))}
+            HomeIconAction(enabled=!busy,onClick=onBack){Icon(Icons.AutoMirrored.Filled.ArrowBack,"返回",Modifier.size(20.dp))}
             Text("装扮小家",Modifier.weight(1f),fontFamily=FontFamily.Serif,color=MaterialTheme.colorScheme.onBackground,fontSize=21.sp,letterSpacing=1.5.sp,maxLines=1,overflow=TextOverflow.Ellipsis)
-            IconButton(enabled=!busy&&canUndo,onClick=onUndo){Icon(Icons.Default.Undo,"撤销",Modifier.size(19.dp))}
-            IconButton(enabled=!busy&&canRedo,onClick=onRedo){Icon(Icons.Default.Redo,"重做",Modifier.size(19.dp))}
-            IconButton(enabled=!busy,onClick=onTrial){Icon(Icons.Default.Keyboard,"试打",Modifier.size(19.dp))}
+            HomeIconAction(enabled=!busy&&canUndo,onClick=onUndo){Icon(Icons.Default.Undo,"撤销",Modifier.size(19.dp))}
+            HomeIconAction(enabled=!busy&&canRedo,onClick=onRedo){Icon(Icons.Default.Redo,"重做",Modifier.size(19.dp))}
+            HomeIconAction(enabled=!busy,onClick=onTrial){Icon(Icons.Default.Keyboard,"试打",Modifier.size(19.dp))}
         }
         HomePaperRule()
     }
@@ -66,7 +66,7 @@ internal fun HomePaperTabs(selected:String,onSelect:(String)->Unit){
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(2.dp)){
             listOf("overall" to "整体","key" to "按键","shadow" to "阴影","sticker" to "贴纸","motion" to "动态","chrome" to "上方","presets" to "预设").forEach{(id,name)->
                 val color=if(selected==id)MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                TextButton(onClick={onSelect(id)},contentPadding=PaddingValues(horizontal=8.dp),modifier=Modifier.widthIn(min=44.dp).height(44.dp).drawBehind{
+                HomeActionButton(onClick={onSelect(id)},contentPadding=PaddingValues(horizontal=8.dp),modifier=Modifier.widthIn(min=44.dp).height(44.dp).drawBehind{
                     if(selected==id)drawLine(color,Offset(5.dp.toPx(),size.height-2.dp.toPx()),Offset(size.width-5.dp.toPx(),size.height-2.dp.toPx()),1.dp.toPx(),pathEffect=PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(),3.dp.toPx())))
                 }){Text(name,color=color,fontSize=12.sp)}
             }
@@ -91,8 +91,7 @@ internal fun HomePaperGroup(title:String,content:@Composable ColumnScope.()->Uni
 
 @Composable
 internal fun HomePaperSwatch(label:String,color:Long,modifier:Modifier=Modifier,onClick:()->Unit){
-    Surface(onClick=onClick,modifier=modifier,shape=RoundedCornerShape(13.dp),color=Color.Transparent,
-        border=BorderStroke(1.dp,MaterialTheme.colorScheme.outlineVariant.copy(alpha=.7f))){
+    Surface(onClick=onClick,modifier=modifier.homeControlOutline(),shape=RoundedCornerShape(16.dp),color=Color.Transparent){
         Row(Modifier.heightIn(min=48.dp).padding(horizontal=10.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)){
             Box(Modifier.size(24.dp).background(Color(color),CircleShape).border(1.dp,MaterialTheme.colorScheme.outlineVariant,CircleShape))
             Text(label,Modifier.weight(1f),fontSize=11.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)

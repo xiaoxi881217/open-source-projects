@@ -294,9 +294,10 @@ fun CandidateBar(
     HomeStickerHost(modifier) { chromeModifier ->
     HomeKeyStyleScope(chromeId) {
     val chromeStyle=LocalHomeKeyStyle.current
-    val chromeVisuals=visuals.copy(backgroundColor=(if(LocalHomeDarkAppearance.current)chromeStyle?.backgroundDark else chromeStyle?.backgroundLight)?.let{Color(it)}?:visuals.backgroundColor,textColor=homeKeyText(visuals.textColor))
+    val chromeBackground=(if(LocalHomeDarkAppearance.current)chromeStyle?.backgroundDark else chromeStyle?.backgroundLight)?.let{Color(it)}?:visuals.backgroundColor
+    val chromeVisuals=visuals.copy(backgroundColor=chromeBackground.copy(alpha=chromeBackground.alpha*(chromeStyle?.keyOpacity?:1f)),textColor=homeKeyText(visuals.textColor))
     Column(
-        modifier = chromeModifier.alpha(chromeStyle?.keyOpacity?:1f).homeKeyEffects(false).homeKeyFrost()
+        modifier = chromeModifier.homeKeyEffects(false).homeKeyFrost()
             .fillMaxWidth()
             .height(44.dp)
             .drawPreeditBubble(
@@ -307,6 +308,7 @@ fun CandidateBar(
                 textColor = chromeVisuals.textColor
             )
             .background(chromeVisuals.backgroundColor)
+            .homeRegionWallpaper()
             .homeKeyInnerShadows()
             .padding(horizontal = horizontalPadding),
         verticalArrangement = Arrangement.Center
@@ -400,12 +402,12 @@ fun CandidateBar(
                                     .clickable(interactionSource=interactions,indication=null) { callbacks.onLogoClick?.invoke() },
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(
+                                HomeReplacementIcon("打开更多") { Icon(
                                     painter = painterResource(id = R.drawable.ic_home_more),
                                     contentDescription = "打开更多",
                                     tint = homeKeyText(chromeVisuals.accentColor),
                                     modifier = Modifier.size(20.dp)
-                                )
+                                ) }
                             }
                             }
                         }
@@ -563,7 +565,8 @@ fun CandidateBar(
                             horizontalArrangement = Arrangement.End,
                         ) {
                             if (toolbarActions.isNotEmpty()) {
-                                toolbarActions.forEach { action ->
+                                val order=LocalHomePreset.current?.toolbarOrder.orEmpty()
+                                toolbarActions.sortedWith(compareBy { action -> order.indexOf(action.item.id).takeIf{it>=0}?:Int.MAX_VALUE }).forEach { action ->
                                     val interactionSource = remember { MutableInteractionSource() }
                                     val isPressed by interactionSource.collectIsPressedAsState()
                                     Box(
@@ -608,12 +611,12 @@ fun CandidateBar(
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(
+                            HomeReplacementIcon(tr(R.string.s_shouqijianpan)) { Icon(
                                 imageVector = Icons.Default.KeyboardArrowDown,
                                 contentDescription = tr(R.string.s_shouqijianpan),
                                 tint = homeKeyText(if (isHideKeyboardPressed) iconButtonTint.copy(alpha = 0.6f) else iconButtonTint),
                                 modifier = Modifier.size(22.dp)
-                            )
+                            ) }
                         }
                         }
                     }

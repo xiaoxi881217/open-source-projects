@@ -19,7 +19,7 @@ internal fun homeFacePath(kind:HomeKeyShape,rect:Rect,radius:Float):Path {
     val box=homeFaceRect(kind,rect.width,rect.height)
     val r=Rect(rect.left+box.left,rect.top+box.top,rect.left+box.left+box.width,rect.top+box.top+box.height)
     return Path().apply{when(kind){
-        HomeKeyShape.SQUARE->addRect(r)
+        HomeKeyShape.SQUARE->addRoundRect(RoundRect(r,CornerRadius(homeFaceCorner(kind,r.width,r.height,radius))))
         HomeKeyShape.CIRCLE->addRoundRect(RoundRect(r,CornerRadius(minOf(r.width,r.height)/2)))
         HomeKeyShape.ROUNDED->addRoundRect(RoundRect(r,CornerRadius(radius.coerceIn(0f,minOf(r.width,r.height)/2))))
     }}
@@ -27,7 +27,8 @@ internal fun homeFacePath(kind:HomeKeyShape,rect:Rect,radius:Float):Path {
 
 @Composable internal fun homeFaceShape():Shape {
     val kind=LocalHomeKeyShape.current;val radius=LocalKeyCornerRadius.current
-    return remember(kind,radius){if(kind==HomeKeyShape.ROUNDED)RoundedCornerShape(radius) else GenericShape{size,_->addPath(homeFacePath(kind,Rect(Offset.Zero,size),0f))}}
+    val radiusPx=with(androidx.compose.ui.platform.LocalDensity.current){radius.toPx()}
+    return remember(kind,radius,radiusPx){if(kind==HomeKeyShape.ROUNDED)RoundedCornerShape(radius) else GenericShape{size,_->addPath(homeFacePath(kind,Rect(Offset.Zero,size),radiusPx))}}
 }
 
 @Composable internal fun Modifier.homeKeyFace(color:Color):Modifier=background(color,homeFaceShape())

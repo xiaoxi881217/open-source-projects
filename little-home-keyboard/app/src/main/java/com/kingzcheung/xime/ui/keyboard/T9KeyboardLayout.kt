@@ -1258,7 +1258,11 @@ private fun T9SpaceKey(
 internal fun HomeT9Grid(layout:com.kingzcheung.xime.settings.KeyboardT9LayoutConfig,compact:Boolean,weight:(String)->Float,cell:@Composable (String,Modifier)->Unit){
  Row(Modifier.fillMaxSize(),horizontalArrangement=Arrangement.spacedBy(homeSectionSpacing(T9_COLUMN_GAP_DP).dp)){
   Column(Modifier.fillMaxHeight().weight(.8f),verticalArrangement=Arrangement.spacedBy(homeSectionSpacing(if(compact)2f else 4f).dp)){layout.left.forEach{cell(it,Modifier.weight(weight(it)))}}
-  Column(Modifier.fillMaxHeight().weight(3.4f)){layout.rows.forEach{ids->Row(Modifier.fillMaxWidth().weight(1f)){ids.forEach{cell(it,Modifier.weight(weight(it)))}}}}
+  val preset=LocalHomePreset.current
+  val padding=LocalKeyVisualPadding.current
+  CompositionLocalProvider(LocalKeyVisualPadding provides if(preset==null)padding else PaddingValues(horizontal=preset.spacingX.dp)) {
+   HomeKeyboardRows("t9",layout.rows.size,Modifier.fillMaxHeight().weight(3.4f)){index,m->Row(m.fillMaxWidth()){layout.rows[index].forEach{cell(it,Modifier.weight(weight(it)))}}}
+  }
   Column(Modifier.fillMaxHeight().weight(.8f),verticalArrangement=Arrangement.spacedBy(homeSectionSpacing(0f).dp)){layout.right.forEach{cell(it,Modifier.weight(weight(it)))}}
  }
 }

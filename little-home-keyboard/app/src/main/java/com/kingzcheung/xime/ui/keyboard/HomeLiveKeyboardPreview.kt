@@ -59,7 +59,7 @@ internal fun HomeLiveKeyboardPreview(preset:HomeVisualPreset,dark:Boolean,state:
     KeyboardLayoutState.Stroke->Text("当前是笔画键盘，选26键或九宫格预览装扮。",color=Color(palette.text))
     else->{
      val config=KeysConfigHelper.getRowsLayout(ascii);val rows=normalizeQwertyRows(config.rows);val columns=config.columns?:rows.firstOrNull()?.keys?.size?:10
-     Column(Modifier.fillMaxSize()){rows.forEach{row->val fraction=rowWidthFraction(row,columns,config.rowAlign);QwertyRow(row.keys,env,Modifier.weight(1f).fillMaxWidth(fraction).align(Alignment.CenterHorizontally))}}
+     HomeKeyboardRows("qwerty",rows.size,Modifier.fillMaxSize()){index,m->val row=rows[index];val fraction=rowWidthFraction(row,columns,config.rowAlign);QwertyRow(row.keys,env,m.fillMaxWidth(fraction).align(Alignment.CenterHorizontally),reserveVerticalInsets=false)}
     }
    }
   }

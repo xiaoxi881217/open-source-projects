@@ -10,6 +10,8 @@ import kotlinx.serialization.Serializable
 }
 
 data class HomeFaceRect(val left:Float,val top:Float,val width:Float,val height:Float)
+fun homeFaceCorner(kind:HomeKeyShape,width:Float,height:Float,radius:Float):Float =
+    if(kind==HomeKeyShape.CIRCLE)minOf(width,height).coerceAtLeast(0f)/2 else radius.coerceIn(0f,minOf(width,height).coerceAtLeast(0f)/2)
 /** 长功能键保留长条，其余键帽居中正方/正圆；布局和命中区域不改。 */
 fun homeFaceRect(shape:HomeKeyShape,width:Float,height:Float):HomeFaceRect {
     if(shape==HomeKeyShape.ROUNDED || width>=height*1.6f)return HomeFaceRect(0f,0f,width,height)

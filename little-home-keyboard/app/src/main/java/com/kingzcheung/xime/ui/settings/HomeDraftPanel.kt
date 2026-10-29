@@ -67,13 +67,13 @@ private fun HomeDraftContent(onBack:()->Unit,onInsert:((String)->Unit)?,embedded
   if(onInsert==null)BackHandler(chosen!=null){chosen=null}
   Column(Modifier.fillMaxSize().padding(horizontal=if(onInsert==null)20.dp else 10.dp,vertical=8.dp),verticalArrangement=Arrangement.spacedBy(if(onInsert==null)12.dp else 6.dp)){
    if(!embedded || chosen!=null)Row(verticalAlignment=androidx.compose.ui.Alignment.CenterVertically){
-    TextButton(onClick={if(chosen!=null)chosen=null else onBack()},modifier=Modifier.heightIn(min=48.dp)){Text(if(chosen!=null)"回到草稿" else "返回")}
+    HomeActionButton(onClick={if(chosen!=null)chosen=null else onBack()},modifier=Modifier.heightIn(min=48.dp)){Text(if(chosen!=null)"回到草稿" else "返回")}
     Column(Modifier.weight(1f)){Text("我的草稿",style=if(onInsert==null)MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleMedium);if(onInsert==null)Text("写下来，留到想说的时候",style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)}
-    if(onInsert==null)FilledTonalButton(onClick={creating=true}){Text("写一篇")}
+    if(onInsert==null)HomeTonalAction(onClick={creating=true}){Text("写一篇")}
    }
    if(embedded && chosen==null)Row(verticalAlignment=androidx.compose.ui.Alignment.CenterVertically){
     Text("${drafts.size}篇草稿",Modifier.weight(1f),style=MaterialTheme.typography.labelMedium)
-    TextButton(onClick={context.startActivity(Intent(context,MainActivity::class.java).putExtra("open_fragment","home_drafts").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))}){Text("写 / 管理")}
+    HomeActionButton(onClick={context.startActivity(Intent(context,MainActivity::class.java).putExtra("open_fragment","home_drafts").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))}){Text("写 / 管理")}
    }
    if(message.isNotEmpty())Text(message,style=MaterialTheme.typography.bodySmall)
    val item=chosen
@@ -85,17 +85,17 @@ private fun HomeDraftContent(onBack:()->Unit,onInsert:((String)->Unit)?,embedded
     val selected=HomeDraftModel.selected(item.text,selection.selection.start,selection.selection.end)
     Text("长按并拖动选区 · 已选${selected.length}字",style=MaterialTheme.typography.bodySmall)
     Row{
-     if(onInsert!=null){Button(enabled=selected.isNotEmpty(),onClick={onInsert(selected)}){Text("插入选中这段")};TextButton(onClick={onInsert(item.text)}){Text("插入全文")}}
-     else TextButton(onClick={edit=item;chosen=null}){Text("继续写 / 修改分类")}
+     if(onInsert!=null){HomePrimaryAction(enabled=selected.isNotEmpty(),onClick={onInsert(selected)}){Text("插入选中这段")};HomeActionButton(onClick={onInsert(item.text)}){Text("插入全文")}}
+     else HomeActionButton(onClick={edit=item;chosen=null}){Text("继续写 / 修改分类")}
     }
    }else{
     if(onInsert==null)OutlinedTextField(query,{query=it.take(100)},label={Text("找标题或草稿内容")},singleLine=true,modifier=Modifier.fillMaxWidth())
     Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)){
-     FilterChip(category==null,{category=null},label={Text("全部")});FilterChip(category=="",{category=""},label={Text("未分类")})
-     categories.forEach{c->FilterChip(category==c.id,{category=c.id},label={Text(c.label)})}
-     if(onInsert==null)TextButton(onClick={categoryDialog=true}){Text("＋分类")}
+     HomeChoiceChip(category==null,{category=null},label={Text("全部")});HomeChoiceChip(category=="",{category=""},label={Text("未分类")})
+     categories.forEach{c->HomeChoiceChip(category==c.id,{category=c.id},label={Text(c.label)})}
+     if(onInsert==null)HomeActionButton(onClick={categoryDialog=true}){Text("＋分类")}
     }
-    if(onInsert==null && category?.isNotEmpty()==true)categories.firstOrNull{it.id==category}?.let{c->TextButton(onClick={deleteCategory=c}){Text("删除这个分类（保留草稿）")}}
+    if(onInsert==null && category?.isNotEmpty()==true)categories.firstOrNull{it.id==category}?.let{c->HomeActionButton(onClick={deleteCategory=c}){Text("删除这个分类（保留草稿）")}}
     val visible=remember(drafts,category,query){drafts.filter{(category==null || (it.categoryId?:"")==category) && (query.isBlank()||it.text.contains(query,true)||it.title.contains(query,true))}}
     LazyColumn(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(10.dp),contentPadding=PaddingValues(bottom=12.dp)){
      if(visible.isEmpty())item{Text("这里还没有草稿，可以先去写一篇。",Modifier.padding(16.dp))}
@@ -103,7 +103,7 @@ private fun HomeDraftContent(onBack:()->Unit,onInsert:((String)->Unit)?,embedded
       Column(Modifier.fillMaxWidth().padding(if(onInsert==null)18.dp else 12.dp),verticalArrangement=Arrangement.spacedBy(6.dp)){
        Text(d.title.ifBlank{d.text.take(24)},style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Medium,maxLines=1,overflow=TextOverflow.Ellipsis);Text(d.text,maxLines=if(onInsert==null)3 else 2,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.bodyMedium,color=MaterialTheme.colorScheme.onSurfaceVariant)
        Text(categories.firstOrNull{it.id==d.categoryId}?.label?:"未分类",style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
-       if(onInsert==null)Row{TextButton(onClick={edit=d}){Text("继续写")};TextButton(onClick={remove=d}){Text("删除")}}
+       if(onInsert==null)Row{HomeActionButton(onClick={edit=d}){Text("继续写")};HomeActionButton(onClick={remove=d}){Text("删除")}}
       }
      }}
     }
@@ -111,9 +111,9 @@ private fun HomeDraftContent(onBack:()->Unit,onInsert:((String)->Unit)?,embedded
    }
   }
  }
- if(categoryDialog)AlertDialog(onDismissRequest={if(!busy)categoryDialog=false},title={Text("给分类起个名字")},text={OutlinedTextField(categoryText,{categoryText=it.take(30)},singleLine=true,label={Text("例如：想说的话、工作、灵感")})},confirmButton={TextButton(enabled=!busy&&categoryText.isNotBlank(),onClick={task{val c=dao.addCategory(categoryText);category=c.id;categoryText="";categoryDialog=false}}){Text("加好")}},dismissButton={TextButton(onClick={categoryDialog=false}){Text("先不加")}})
- remove?.let{d->AlertDialog(onDismissRequest={remove=null},title={Text("删除这篇草稿？")},text={Text("只删除这一篇本地草稿，不能撤销。")},confirmButton={TextButton(enabled=!busy,onClick={task{require(dao.delete(d.id,d.updatedAt)==1){"草稿已经变了，请重新查看"};remove=null}}){Text("删除")}},dismissButton={TextButton(onClick={remove=null}){Text("留着")}})}
- deleteCategory?.let{c->AlertDialog(onDismissRequest={deleteCategory=null},title={Text("删除“${c.label}”？")},text={Text("草稿会回到未分类，不会删除内容。")},confirmButton={TextButton(enabled=!busy,onClick={task{dao.deleteCategory(c.id);category=null;deleteCategory=null}}){Text("删除分类")}},dismissButton={TextButton(onClick={deleteCategory=null}){Text("留着")}})}
+ if(categoryDialog)AlertDialog(onDismissRequest={if(!busy)categoryDialog=false},title={Text("给分类起个名字")},text={OutlinedTextField(categoryText,{categoryText=it.take(30)},singleLine=true,label={Text("例如：想说的话、工作、灵感")})},confirmButton={HomeActionButton(enabled=!busy&&categoryText.isNotBlank(),onClick={task{val c=dao.addCategory(categoryText);category=c.id;categoryText="";categoryDialog=false}}){Text("加好")}},dismissButton={HomeActionButton(onClick={categoryDialog=false}){Text("先不加")}})
+ remove?.let{d->AlertDialog(onDismissRequest={remove=null},title={Text("删除这篇草稿？")},text={Text("只删除这一篇本地草稿，不能撤销。")},confirmButton={HomeActionButton(enabled=!busy,onClick={task{require(dao.delete(d.id,d.updatedAt)==1){"草稿已经变了，请重新查看"};remove=null}}){Text("删除")}},dismissButton={HomeActionButton(onClick={remove=null}){Text("留着")}})}
+ deleteCategory?.let{c->AlertDialog(onDismissRequest={deleteCategory=null},title={Text("删除“${c.label}”？")},text={Text("草稿会回到未分类，不会删除内容。")},confirmButton={HomeActionButton(enabled=!busy,onClick={task{dao.deleteCategory(c.id);category=null;deleteCategory=null}}){Text("删除分类")}},dismissButton={HomeActionButton(onClick={deleteCategory=null}){Text("留着")}})}
 }
 
 @Composable
@@ -125,13 +125,13 @@ private fun HomeDraftEditor(entry:HomeDraftEntry?,categories:List<HomeDraftCateg
  fun back(){if(dirty)confirmLeave=true else onBack()}
  BackHandler{back()}
  Column(Modifier.fillMaxSize().imePadding().padding(horizontal=20.dp,vertical=10.dp),verticalArrangement=Arrangement.spacedBy(14.dp)){
-  Row{TextButton(onClick=::back,enabled=!busy){Text("返回")};Text("写一篇小草稿",Modifier.weight(1f).padding(horizontal=6.dp),style=MaterialTheme.typography.titleLarge);Button(enabled=!busy&&value.text.isNotBlank(),onClick={onSave(title,value.text,category)}){Text(if(busy)"存着…" else "保存")}}
+  Row{HomeActionButton(onClick=::back,enabled=!busy){Text("返回")};Text("写一篇小草稿",Modifier.weight(1f).padding(horizontal=6.dp),style=MaterialTheme.typography.titleLarge);HomePrimaryAction(enabled=!busy&&value.text.isNotBlank(),onClick={onSave(title,value.text,category)}){Text(if(busy)"存着…" else "保存")}}
   OutlinedTextField(title,{title=it.take(80)},label={Text("标题（可以不写）")},singleLine=true,modifier=Modifier.fillMaxWidth())
   Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)){
-   FilterChip(category==null,{category=null},label={Text("未分类")});categories.forEach{c->FilterChip(category==c.id,{category=c.id},label={Text(c.label)})};TextButton(onClick=onAddCategory){Text("＋分类")}
+   HomeChoiceChip(category==null,{category=null},label={Text("未分类")});categories.forEach{c->HomeChoiceChip(category==c.id,{category=c.id},label={Text(c.label)})};HomeActionButton(onClick=onAddCategory){Text("＋分类")}
   }
   OutlinedTextField(value,{if(it.text.length<=HomeDraftModel.MAX_TEXT)value=it},label={Text("想写的话，慢慢写在这里")},modifier=Modifier.weight(1f).fillMaxWidth(),shape=RoundedCornerShape(18.dp))
   Text("${value.text.length}/${HomeDraftModel.MAX_TEXT}字 · 保存后，可在键盘里长按选中一小段插入",style=MaterialTheme.typography.bodySmall)
  }
- if(confirmLeave)AlertDialog(onDismissRequest={confirmLeave=false},title={Text("草稿还没存好")},text={Text("保存后再离开，或放弃这次修改。")},confirmButton={TextButton(enabled=!busy&&value.text.isNotBlank(),onClick={onSave(title,value.text,category)}){Text("保存")}},dismissButton={TextButton(enabled=!busy,onClick={confirmLeave=false;onBack()}){Text("放弃本次修改")}})
+ if(confirmLeave)AlertDialog(onDismissRequest={confirmLeave=false},title={Text("草稿还没存好")},text={Text("保存后再离开，或放弃这次修改。")},confirmButton={HomeActionButton(enabled=!busy&&value.text.isNotBlank(),onClick={onSave(title,value.text,category)}){Text("保存")}},dismissButton={HomeActionButton(enabled=!busy,onClick={confirmLeave=false;onBack()}){Text("放弃本次修改")}})
 }

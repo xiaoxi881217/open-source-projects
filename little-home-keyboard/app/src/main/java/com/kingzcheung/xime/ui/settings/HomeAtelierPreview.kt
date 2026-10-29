@@ -25,17 +25,17 @@ internal fun HomeAtelierPreview(percent: Int,onPercent: (Int)->Unit,naturalWidth
     var visible by rememberSaveable { mutableStateOf(true) }
     var options by rememberSaveable { mutableStateOf(false) }
     if (!visible) {
-        IconButton(onClick={visible=true},modifier=Modifier.height(40.dp)) { Icon(Icons.Default.Visibility,"展开预览") }
+        HomeIconAction(onClick={visible=true},modifier=Modifier.height(40.dp)) { Icon(Icons.Default.Visibility,"展开预览") }
         return
     }
     if(options)AlertDialog(onDismissRequest={options=false},title={Text("预览尺寸")},text={
         Column {
-            Row { TextButton(onClick={onPercent(10)}){Text("迷你")};TextButton(onClick={onPercent(14)}){Text("紧凑")};TextButton(onClick={onPercent(28)}){Text("放大")}}
+            Row { HomeActionButton(onClick={onPercent(10)}){Text("迷你")};HomeActionButton(onClick={onPercent(14)}){Text("紧凑")};HomeActionButton(onClick={onPercent(28)}){Text("放大")}}
             Slider(percent.toFloat(),{onPercent(it.roundToInt())},valueRange=10f..40f)
             HorizontalDivider()
             settingsContent()
         }
-    },confirmButton={TextButton(onClick={options=false}){Text("好了")}})
+    },confirmButton={HomeActionButton(onClick={options=false}){Text("好了")}})
     val height=HomeEditorViewport.frameHeight(LocalConfiguration.current.screenHeightDp.toFloat(),percent)
     Surface(shape=RoundedCornerShape(12.dp),color=MaterialTheme.colorScheme.surfaceContainerLowest,
         modifier=Modifier.fillMaxWidth().border(1.dp,MaterialTheme.colorScheme.outlineVariant,RoundedCornerShape(12.dp))) {
@@ -51,8 +51,8 @@ internal fun HomeAtelierPreview(percent: Int,onPercent: (Int)->Unit,naturalWidth
             }
         }
         Row(Modifier.align(Alignment.TopEnd)) {
-            IconButton(onClick={options=true},modifier=Modifier.size(40.dp)){Icon(Icons.Default.Tune,"调整预览尺寸",modifier=Modifier.size(18.dp))}
-            IconButton(onClick={visible=false},modifier=Modifier.size(40.dp)){Icon(Icons.Default.VisibilityOff,"收起预览",modifier=Modifier.size(18.dp))}
+            HomeIconAction(onClick={options=true},modifier=Modifier.size(40.dp)){Icon(Icons.Default.Tune,"调整预览尺寸",modifier=Modifier.size(18.dp))}
+            HomeIconAction(onClick={visible=false},modifier=Modifier.size(40.dp)){Icon(Icons.Default.VisibilityOff,"收起预览",modifier=Modifier.size(18.dp))}
         }
         }
     }

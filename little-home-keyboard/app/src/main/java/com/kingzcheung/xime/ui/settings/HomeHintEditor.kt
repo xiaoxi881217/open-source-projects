@@ -45,35 +45,35 @@ internal fun HomeHintEditor(style:HomeKeyStyle,palette:HomePalette,dark:Boolean,
                     }
                     HomePaperSwatch("小字颜色",(if(dark)style.hintDark else style.hintLight)?:palette.text,Modifier.fillMaxWidth()){color=true}
                     Row {
-                        TextButton(onClick={onSync(colorProperty)}){Text("同步颜色")}
-                        TextButton(onClick={onChange(if(dark)style.copy(hintDark=null) else style.copy(hintLight=null))}){Text("跟随原色")}
+                        HomeActionButton(onClick={onSync(colorProperty)}){Text("同步颜色")}
+                        HomeActionButton(onClick={onChange(if(dark)style.copy(hintDark=null) else style.copy(hintLight=null))}){Text("跟随原色")}
                     }
                     Row(verticalAlignment=Alignment.CenterVertically) {
                         Box(Modifier.weight(1f)){HomeValueSlider("字号",style.hintFontSize?:9f,2f..24f,9f){onChange(style.copy(hintFontSize=it))}}
                         HomeHintSync("同步小字字号"){onSync(HomeStyleProperty.HINT_FONT_SIZE)}
                     }
                     Row(verticalAlignment=Alignment.CenterVertically) {
-                        Box(Modifier.weight(1f)){HomeValueSlider("不透明度",style.hintOpacity,0f..1f,1f){onChange(style.copy(hintOpacity=it))}}
+                        Box(Modifier.weight(1f)){HomeValueSlider("小字不透明度",style.hintOpacity,0f..1f,1f){onChange(style.copy(hintOpacity=it))}}
                         HomeHintSync("同步小字不透明度"){onSync(HomeStyleProperty.HINT_OPACITY)}
                     }
                     HomePaperRule()
                     Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(onClick=onGesture,modifier=Modifier.weight(1f),shape=RoundedCornerShape(12.dp)){Text("手势摆放")}
-                        OutlinedButton(onClick={precise=!precise},modifier=Modifier.weight(1f),shape=RoundedCornerShape(12.dp)){Text(if(precise)"收起坐标" else "精确位置")}
+                        HomeOutlinedAction(onClick=onGesture,modifier=Modifier.weight(1f),shape=RoundedCornerShape(12.dp)){Text("手势摆放")}
+                        HomeOutlinedAction(onClick={precise=!precise},modifier=Modifier.weight(1f),shape=RoundedCornerShape(12.dp)){Text(if(precise)"收起坐标" else "精确位置")}
                     }
                     if(precise) {
                         HomeValueSlider("横向",style.hintOffsetX,-.8f.. .8f,0f){onChange(style.copy(hintOffsetX=it))}
-                        TextButton(onClick={onSync(HomeStyleProperty.HINT_X)}){Text("只同步横向")}
+                        HomeActionButton(onClick={onSync(HomeStyleProperty.HINT_X)}){Text("只同步横向")}
                         HomeValueSlider("纵向",style.hintOffsetY,-.8f.. .8f,0f){onChange(style.copy(hintOffsetY=it))}
-                        TextButton(onClick={onSync(HomeStyleProperty.HINT_Y)}){Text("只同步纵向")}
+                        HomeActionButton(onClick={onSync(HomeStyleProperty.HINT_Y)}){Text("只同步纵向")}
                     }
                     FlowRow {
-                        TextButton(onClick={onSync(HomeStyleProperty.HINT_POSITION)}){Text("同步位置")}
-                        TextButton(onClick={onChange(style.copy(hintOffsetX=0f,hintOffsetY=0f))}){Text("回到原位")}
-                        TextButton(onClick={onChange(style.copy(hintFontSize=null))}){Text("字号跟随原设置")}
+                        HomeActionButton(onClick={onSync(HomeStyleProperty.HINT_POSITION)}){Text("同步位置")}
+                        HomeActionButton(onClick={onChange(style.copy(hintOffsetX=0f,hintOffsetY=0f))}){Text("回到原位")}
+                        HomeActionButton(onClick={onChange(style.copy(hintFontSize=null))}){Text("字号跟随原设置")}
                     }
-                    FilledTonalButton(onClick={onSync(HomeStyleProperty.HINT_ALL)},modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(12.dp)){Text("同步小字整套样式")}
-                    TextButton(onClick={onChange(style.copy(hintOffsetX=0f,hintOffsetY=0f,hintFontSize=null,hintLight=null,hintDark=null,hintOpacity=1f,hintVisible=true))}){Text("小字恢复原设置")}
+                    HomeTonalAction(onClick={onSync(HomeStyleProperty.HINT_ALL)},modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(12.dp)){Text("同步小字整套样式")}
+                    HomeActionButton(onClick={onChange(style.copy(hintOffsetX=0f,hintOffsetY=0f,hintFontSize=null,hintLight=null,hintDark=null,hintOpacity=1f,hintVisible=true))}){Text("小字恢复原设置")}
                 }
             }
         }
@@ -85,5 +85,5 @@ internal fun HomeHintEditor(style:HomeKeyStyle,palette:HomePalette,dark:Boolean,
 
 @Composable
 private fun HomeHintSync(description:String,onClick:()->Unit) {
-    IconButton(onClick=onClick){Icon(Icons.Default.Sync,description,Modifier.size(18.dp),tint=MaterialTheme.colorScheme.primary)}
+    HomeIconAction(onClick=onClick){Icon(Icons.Default.Sync,description,Modifier.size(18.dp),tint=MaterialTheme.colorScheme.primary)}
 }

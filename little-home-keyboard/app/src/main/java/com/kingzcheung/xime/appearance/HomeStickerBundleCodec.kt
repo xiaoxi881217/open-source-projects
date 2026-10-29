@@ -18,8 +18,9 @@ object HomeStickerBundleCodec {
     private const val FORMAT = "little-home-keyboard-appearance"
     private val json = Json { encodeDefaults=true;prettyPrint=true }
     fun hash(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
-    fun imageIds(preset: HomeVisualPreset): Set<String> = preset.stickers().mapNotNull { it.asset.takeIf { a -> a.startsWith("image:") }?.removePrefix("image:") }.toSet() + listOfNotNull(preset.wallpaper?.asset?.removePrefix("wallpaper:"))
-    fun imageLimit(preset:HomeVisualPreset,id:String):Int = if(preset.wallpaper?.asset=="wallpaper:$id" && preset.stickers().none{it.asset=="image:$id"})MAX_WALLPAPER_BYTES else MAX_IMAGE_BYTES
+    fun imageAssets(preset:HomeVisualPreset):Set<String> = (preset.stickers().map{it.asset}+preset.iconAssets()).filter{it.startsWith("image:")}.toSet()
+    fun imageIds(preset: HomeVisualPreset): Set<String> = imageAssets(preset).map{it.substringAfter(':')}.toSet()+preset.wallpapers().map{it.asset.substringAfter(':')}
+    fun imageLimit(preset:HomeVisualPreset,id:String):Int = if(preset.wallpapers().any{it.asset=="wallpaper:$id"} && "image:$id" !in imageAssets(preset))MAX_WALLPAPER_BYTES else MAX_IMAGE_BYTES
     private fun validate(preset: HomeVisualPreset, images: Map<String,ByteArray>) {
         HomePresetCodec.encode(preset)
         require(images.keys==imageIds(preset)) { "贴纸资源不完整，或包含没用到的文件" }

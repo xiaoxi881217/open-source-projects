@@ -39,7 +39,7 @@ import kotlinx.coroutines.withContext
     }
     Column(verticalArrangement=Arrangement.spacedBy(4.dp)) {
     Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-        OutlinedButton(enabled=!busy,onClick={
+        HomeOutlinedAction(enabled=!busy,onClick={
             setBusy(true)
             copying=true;message="正在整理装扮…"
             scope.launch {
@@ -56,11 +56,11 @@ import kotlinx.coroutines.withContext
                 setBusy(false);copying=false
             }
         }){Text(if(copying)"正在准备…" else "复制DIY码")}
-        OutlinedButton(enabled=!busy,onClick=openImport){Text("输入DIY码")}
+        HomeOutlinedAction(enabled=!busy,onClick=openImport){Text("输入DIY码")}
     }
     Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-        TextButton(enabled=!busy,onClick={exportTxt.launch(HomeDiyCode.textFileName(preset.name))}){Text("导出TXT")}
-        TextButton(enabled=!busy,onClick=openFileImport){Text("导入TXT")}
+        HomeActionButton(enabled=!busy,onClick={exportTxt.launch(HomeDiyCode.textFileName(preset.name))}){Text("导出TXT")}
+        HomeActionButton(enabled=!busy,onClick=openFileImport){Text("导入TXT")}
     }
     if(message.isNotEmpty())Text(message,style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.primary)
     }
@@ -79,12 +79,12 @@ import kotlinx.coroutines.withContext
             if(error.isNotEmpty())Text(error,style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.error)
             Text("图片只安装到本机；不会连接小家或下载外部链接。",style=MaterialTheme.typography.bodySmall)
         }
-    },confirmButton={TextButton(enabled=!busy&&text.isNotBlank(),onClick={
+    },confirmButton={HomeActionButton(enabled=!busy&&text.isNotBlank(),onClick={
         busy=true
         scope.launch {
             runCatching{withContext(Dispatchers.IO){HomeStickerAssets.install(HomeDiyCode.decode(text))}}
                 .onSuccess(loaded).onFailure{error="这份DIY码没能导入，请确认复制完整、双方键盘已更新，或改用装扮文件"}
             busy=false
         }
-    }){Text(if(busy)"正在解开…" else "放进预览")}},dismissButton={TextButton(enabled=!busy,onClick=dismiss){Text("取消")}})
+    }){Text(if(busy)"正在解开…" else "放进预览")}},dismissButton={HomeActionButton(enabled=!busy,onClick=dismiss){Text("取消")}})
 }

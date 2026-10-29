@@ -41,7 +41,7 @@ internal fun HomeKeyStyleScope(id: String, preset: HomeVisualPreset? = LocalHome
         LocalHomeKeyShape provides kind,LocalHomeKeyBorder provides (border?:com.kingzcheung.xime.appearance.HomeBorder()),
         LocalHomeAnimationEnabled provides (preset?.animationsEnabled == true),
         LocalHomeDarkAppearance provides (dark ?: LocalHomeDarkAppearance.current),
-        LocalKeyCornerRadius provides (if(kind==com.kingzcheung.xime.appearance.HomeKeyShape.SQUARE)0.dp else style?.cornerRadius?.dp ?: LocalKeyCornerRadius.current), content = content)
+        LocalKeyCornerRadius provides (style?.cornerRadius?.dp ?: LocalKeyCornerRadius.current), content = content)
 }
 
 @Composable
@@ -54,7 +54,8 @@ internal fun homeKeyBackground(fallback: Color): Color {
 @Composable
 internal fun homeKeyText(fallback: Color): Color {
     val style = LocalHomeKeyStyle.current
-    return (if (LocalHomeDarkAppearance.current) style?.textDark else style?.textLight)?.let { Color(it) } ?: fallback
+    val color=(if (LocalHomeDarkAppearance.current) style?.textDark else style?.textLight)?.let { Color(it) } ?: fallback
+    return color.copy(alpha=color.alpha*(style?.textOpacity?:1f))
 }
 
 @Composable

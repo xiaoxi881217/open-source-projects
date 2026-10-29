@@ -165,19 +165,19 @@ private fun HomeAppearanceEditorContent(onBack: () -> Unit, onApplied: () -> Uni
         Column(Modifier.fillMaxSize().padding(inset).padding(horizontal=16.dp,vertical=6.dp),verticalArrangement=Arrangement.spacedBy(8.dp)){
             HomeAtelierPreview(previewPercent,{ next -> previewPercent=next;viewPrefs.edit().putInt("preview_compact_percent",next).apply() },naturalWidthDp=previewState.width,settingsContent={
                 FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
-                    FilterChip(layoutOverride==null,{layoutOverride=null},label={Text("跟随")})
-                    FilterChip(layoutOverride==KeyboardLayoutState.Chinese,{layoutOverride=KeyboardLayoutState.Chinese},label={Text("26键")})
-                    FilterChip(layoutOverride==KeyboardLayoutState.T9Pinyin,{layoutOverride=KeyboardLayoutState.T9Pinyin},label={Text("九宫格")})
-                    FilterChip(layoutOverride==KeyboardLayoutState.Number,{layoutOverride=KeyboardLayoutState.Number},label={Text("符号")})
+                    HomeChoiceChip(layoutOverride==null,{layoutOverride=null},label={Text("跟随")})
+                    HomeChoiceChip(layoutOverride==KeyboardLayoutState.Chinese,{layoutOverride=KeyboardLayoutState.Chinese},label={Text("26键")})
+                    HomeChoiceChip(layoutOverride==KeyboardLayoutState.T9Pinyin,{layoutOverride=KeyboardLayoutState.T9Pinyin},label={Text("九宫格")})
+                    HomeChoiceChip(layoutOverride==KeyboardLayoutState.Number,{layoutOverride=KeyboardLayoutState.Number},label={Text("符号")})
                 }
                 FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)){
-                    FilterChip(!dark,{dark=false;followDark=false},label={Text("浅色")})
-                    FilterChip(dark,{dark=true;followDark=false},label={Text("深色")})
-                    TextButton(onClick={followDark=true;dark=live?.dark?:fallbackDark}){Text("跟随系统")}
+                    HomeChoiceChip(!dark,{dark=false;followDark=false},label={Text("浅色")})
+                    HomeChoiceChip(dark,{dark=true;followDark=false},label={Text("深色")})
+                    HomeActionButton(onClick={followDark=true;dark=live?.dark?:fallbackDark}){Text("跟随系统")}
                 }
-                TextButton(onClick={load(HomePresetStore.activeId.takeIf{it in HomePresetStore.presets},currentAppearance());layoutOverride=null;followDark=true;dark=live?.dark?:fallbackDark}){Text("重新读取当前装扮")}
-                TextButton(onClick={feedbackPage=true},enabled=!busy){Text("震动与按键音")}
-                FilterChip(previewChrome=="menu",{previewChrome=if(previewChrome=="menu")"toolbar" else "menu"},label={Text("预览更多面板")})
+                HomeActionButton(onClick={load(HomePresetStore.activeId.takeIf{it in HomePresetStore.presets},currentAppearance());layoutOverride=null;followDark=true;dark=live?.dark?:fallbackDark}){Text("重新读取当前装扮")}
+                HomeActionButton(onClick={feedbackPage=true},enabled=!busy){Text("震动与按键音")}
+                HomeChoiceChip(previewChrome=="menu",{previewChrome=if(previewChrome=="menu")"toolbar" else "menu"},label={Text("预览更多面板")})
             }) {
                 val selectedFloating=draft.floatingStickers.firstOrNull{it.id==floatingId}
                 val rendered=floatingGesture?.let{s->draft.copy(floatingStickers=draft.floatingStickers.map{if(it.id==floatingId)it.copy(sticker=s) else it})}?:draft
@@ -203,24 +203,26 @@ private fun HomeAppearanceEditorContent(onBack: () -> Unit, onApplied: () -> Uni
                             }
                         }
                         Row(verticalAlignment=Alignment.CenterVertically){Text("柔和渐变",Modifier.weight(1f));Switch(draft.gradient,{change(draft.copy(gradient=it))})}
-                        if(draft.gradient){TextButton(onClick={colorTarget="gradientEnd"}){Text("渐变终点颜色")};HomeValueSlider("渐变方向",draft.gradientAngle.toFloat(),0f..360f,90f){change(draft.copy(gradientAngle=it.roundToInt()))}}
+                        if(draft.gradient){HomeActionButton(onClick={colorTarget="gradientEnd"}){Text("渐变终点颜色")};HomeValueSlider("渐变方向",draft.gradientAngle.toFloat(),0f..360f,90f){change(draft.copy(gradientAngle=it.roundToInt()))}}
                     }
                     HomePaperGroup("键帽与文字"){
                         FlowRow(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-                            HomeKeyShape.entries.forEach{shape->FilterChip(draft.keyShape==shape,{change(draft.withGlobalShape(shape))},label={Text(shape.label)})}
+                            HomeKeyShape.entries.forEach{shape->HomeChoiceChip(draft.keyShape==shape,{change(draft.withGlobalShape(shape))},label={Text(shape.label)})}
                         }
-                        if(draft.keyShape==HomeKeyShape.ROUNDED)HomeValueSlider("整体圆角",draft.cornerRadius.toFloat(),0f..24f,12f){change(draft.withGlobalRadius(it.roundToInt()))}
+                        if(draft.keyShape!=HomeKeyShape.CIRCLE)HomeValueSlider("整体圆角",draft.cornerRadius.toFloat(),0f..24f,12f){change(draft.withGlobalRadius(it.roundToInt()))}
                         HomeValueSlider("候选字号",draft.candidateTextSize.toFloat(),14f..28f,19f){change(draft.copy(candidateTextSize=it.roundToInt()));previewChrome="candidate"}
                     }
                     HomePaperGroup("键间留白") {
                         Column(verticalArrangement=Arrangement.spacedBy(0.dp)) {
                             HomeValueSlider("横向缝隙",draft.spacingX*2f,0f..8f,6f,compact=true){change(draft.copy(spacingX=it/2f))}
                             HomePaperRule()
-                            HomeValueSlider("上下行缝隙",draft.spacingY*2f,0f..16f,8f,compact=true){change(draft.copy(spacingY=it/2f))}
+                            HomeValueSlider("整体行缝（逐行设置优先）",draft.spacingY*2f,0f..16f,8f,compact=true){change(draft.copy(spacingY=it/2f))}
+                            HomeRowGapEditor(draft,if(previewState.layout==KeyboardLayoutState.T9Pinyin)"t9" else "qwerty",
+                                if(previewState.layout==KeyboardLayoutState.T9Pinyin)KeysConfigHelper.getT9Layout().rows.size else normalizeQwertyRows(KeysConfigHelper.getRowsLayout(previewState.layout==KeyboardLayoutState.English).rows).size,::change)
                             HomePaperRule()
                             HomeValueSlider(if(draft.sectionSpacing==null)"分区（跟随）" else "分区留白",draft.sectionSpacing?:2f,0f..12f,2f,compact=true){change(draft.copy(sectionSpacing=it))}
                         }
-                        if(draft.sectionSpacing!=null)TextButton(onClick={change(draft.copy(sectionSpacing=null))}){Text("分区恢复跟随布局")}
+                        if(draft.sectionSpacing!=null)HomeActionButton(onClick={change(draft.copy(sectionSpacing=null))}){Text("分区恢复跟随布局")}
                     }
                     HomePaperGroup("壁纸与底图"){HomeWallpaperEditor(draft,dark,!busy,::change)}
                     HomePaperGroup("按键边框"){HomeBorderEditor(draft.keyBorder,dark,(if(dark)draft.dark else draft.light).accent,{change(draft.copy(keyBorder=it))})}
@@ -230,9 +232,9 @@ private fun HomeAppearanceEditorContent(onBack: () -> Unit, onApplied: () -> Uni
                     HomePaperGroup(when(section){"chrome"->"上方的小细节";"sticker"->"贴上喜欢的小碎片";"shadow"->"光影与形状";"motion"->"指尖的小动静";else->"这一颗按键"}){
                         val toolbarSelected=selectedPreviewKey?.startsWith("toolbar:")==true
                         if(section=="sticker")FlowRow(horizontalArrangement=Arrangement.spacedBy(6.dp)){
-                            FilterChip(!freeStickers&&!toolbarSelected,{freeStickers=false;selectedPreviewKey=if(previewState.layout==KeyboardLayoutState.T9Pinyin)"t9:2" else "qwerty:q"},label={Text("按键贴纸")})
-                            FilterChip(!freeStickers&&toolbarSelected,{freeStickers=false;previewChrome="toolbar";selectedPreviewKey="toolbar:more_menu"},label={Text("快捷图标")})
-                            FilterChip(freeStickers,{freeStickers=true;if(floatingId==null)floatingId=draft.floatingStickers.firstOrNull()?.id},label={Text("自由贴纸")})
+                            HomeChoiceChip(!freeStickers&&!toolbarSelected,{freeStickers=false;selectedPreviewKey=if(previewState.layout==KeyboardLayoutState.T9Pinyin)"t9:2" else "qwerty:q"},label={Text("按键贴纸")})
+                            HomeChoiceChip(!freeStickers&&toolbarSelected,{freeStickers=false;previewChrome="toolbar";selectedPreviewKey="toolbar:more_menu"},label={Text("快捷图标")})
+                            HomeChoiceChip(freeStickers,{freeStickers=true;if(floatingId==null)floatingId=draft.floatingStickers.firstOrNull()?.id},label={Text("自由贴纸")})
                         }
                         if(section=="sticker" && freeStickers)HomeFloatingStickerEditor(draft,floatingId,{floatingId=it},undo.toList()+redo.toList(),::change)
                         if(section=="sticker"&&!freeStickers&&toolbarSelected) {
@@ -241,41 +243,41 @@ private fun HomeAppearanceEditorContent(onBack: () -> Unit, onApplied: () -> Uni
                                 onSelectedKey={selectedPreviewKey=it;previewChrome="toolbar"},extraKeys=targets,glyph={key->
                                     val tint=homeKeyText(Color((if(dark)draft.dark else draft.light).text))
                                     when(key){
-                                        "more_menu"->Icon(painterResource(com.kingzcheung.xime.R.drawable.ic_home_more),"更多",tint=tint)
-                                        "hide_keyboard"->Icon(Icons.Default.KeyboardArrowDown,"收起键盘",tint=tint)
+                                        "more_menu"->HomeReplacementIcon("更多"){Icon(painterResource(com.kingzcheung.xime.R.drawable.ic_home_more),"更多",tint=tint)}
+                                        "hide_keyboard"->HomeReplacementIcon("收起键盘"){Icon(Icons.Default.KeyboardArrowDown,"收起键盘",tint=tint)}
                                         else->previewState.toolbarItems.firstOrNull{HomeKeyIds.token(it.id)==key}?.let{ToolbarButtonGlyph(it,tint)}
                                     }
                                 })
                         }
-                        if(section=="chrome")HomeChromeEditor(draft,dark,if(previewChrome=="menu")"toolbar" else previewChrome,{previewChrome=it;selectedPreviewKey="chrome:$it"},selectedPreviewKey,undo.toList()+redo.toList(),::change)
+                        if(section=="chrome")HomeChromeEditor(draft,dark,if(previewChrome=="menu")"toolbar" else previewChrome,{previewChrome=it;selectedPreviewKey="chrome:$it"},selectedPreviewKey,undo.toList()+redo.toList(),::change,previewState.toolbarItems)
                         if(section in listOf("key","shadow","sticker","motion") && !(section=="sticker"&&(freeStickers||toolbarSelected)))HomePerKeyEditor(draft,dark,::change,undo.toList()+redo.toList(),section,if(previewState.layout==KeyboardLayoutState.T9Pinyin)"t9" else "qwerty",{layoutOverride=if(it=="t9")KeyboardLayoutState.T9Pinyin else KeyboardLayoutState.Chinese},selectedPreviewKey,{selectedPreviewKey=it})
                     }
                 }
                 if(section=="presets")HomePaperGroup("我的预设"){
             FlowRow(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-                OutlinedButton(onClick={load(null,HomeVisualPreset(name="方方小键盘",keyShape=HomeKeyShape.SQUARE,cornerRadius=0))},enabled=!busy){Text("新建正方形预设")}
-                OutlinedButton(onClick={load(null,HomeVisualPreset(name="圆圆小键盘",keyShape=HomeKeyShape.CIRCLE))},enabled=!busy){Text("新建圆形预设")}
+                HomeOutlinedAction(onClick={load(null,HomeVisualPreset(name="方方小键盘",keyShape=HomeKeyShape.SQUARE,cornerRadius=8))},enabled=!busy){Text("新建正方形预设")}
+                HomeOutlinedAction(onClick={load(null,HomeVisualPreset(name="圆圆小键盘",keyShape=HomeKeyShape.CIRCLE))},enabled=!busy){Text("新建圆形预设")}
             }
             OutlinedTextField(draft.name,{if(it.length<=80)change(draft.copy(name=it))},label={Text("预设名字")},singleLine=true,modifier=Modifier.fillMaxWidth(),enabled=!busy)
             Row {
-                TextButton(enabled = !busy, onClick = { load(null, HomeVisualPreset()) }) { Text("新建") }
-                TextButton(enabled = !busy, onClick = { load(null, draft.copy(name = "${draft.name.take(70)} 副本")) }) { Text("复制这一份") }
-                TextButton(enabled = !busy, onClick = { import.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }) { Text("导入") }
-                TextButton(enabled = !busy, onClick = { export.launch("小家键盘完整装扮.lhktheme.json") }) { Text("导出") }
+                HomeActionButton(enabled = !busy, onClick = { load(null, HomeVisualPreset()) }) { Text("新建") }
+                HomeActionButton(enabled = !busy, onClick = { load(null, draft.copy(name = "${draft.name.take(70)} 副本")) }) { Text("复制这一份") }
+                HomeActionButton(enabled = !busy, onClick = { import.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }) { Text("导入") }
+                HomeActionButton(enabled = !busy, onClick = { export.launch("小家键盘完整装扮.lhktheme.json") }) { Text("导出") }
             }
             HomeDiyShareActions(draft,busy,{busy=it},{showDiyImport=true},{import.launch(arrayOf("text/plain","application/octet-stream","application/json"))})
             HomePresetStore.presets.forEach { (savedId, preset) ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = { load(savedId, preset) }, enabled = !busy, modifier = Modifier.weight(1f)) {
+                    HomeActionButton(onClick = { load(savedId, preset) }, enabled = !busy, modifier = Modifier.weight(1f)) {
                         Text((if (savedId == HomePresetStore.activeId) "正在用 · " else "") + preset.name)
                     }
-                    TextButton(onClick = {
+                    HomeActionButton(onClick = {
                         SettingsPreferences.setKeyboardTheme(context, savedId); onApplied(); load(savedId, preset)
                     }, enabled = !busy) { Text("用这份") }
                 }
             }
-            TextButton(enabled = id != null && !busy, onClick = { deleteConfirm = true }) { Text("删除正在编辑的预设") }
-            TextButton(enabled=!busy,onClick={change(HomeVisualPreset(name=draft.name))}){Text("恢复起点")}
+            HomeActionButton(enabled = id != null && !busy, onClick = { deleteConfirm = true }) { Text("删除正在编辑的预设") }
+            HomeActionButton(enabled=!busy,onClick={change(HomeVisualPreset(name=draft.name))}){Text("恢复起点")}
 
                 }
                 if(status.isNotEmpty())Text(status,style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
@@ -283,12 +285,12 @@ private fun HomeAppearanceEditorContent(onBack: () -> Unit, onApplied: () -> Uni
             }
             HomePaperRule()
             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                FilledTonalButton(shape=RoundedCornerShape(15.dp),enabled=!busy && draft.name.isNotBlank(),modifier=Modifier.weight(1f),onClick={
+                HomeTonalAction(shape=RoundedCornerShape(15.dp),enabled=!busy && draft.name.isNotBlank(),modifier=Modifier.weight(1f),onClick={
                     val source=draft.panelSyncSource(selectedPreviewKey)
                     val next=draft.withPanelStyle(source,source.substringAfter(':') in KeysConfigHelper.FUNCTION_KEY_IDS)
                     change(next);save(next,true)
                 }){Text("一键同步符号")}
-                Button(shape=RoundedCornerShape(15.dp),enabled=!busy && draft.name.isNotBlank(),modifier=Modifier.weight(1f),onClick={save(draft)}) {
+                HomePrimaryAction(shape=RoundedCornerShape(15.dp),enabled=!busy && draft.name.isNotBlank(),modifier=Modifier.weight(1f),onClick={save(draft)}) {
                     Text(if(busy)"正在保存…" else "保存并用上")
                 }
             }
@@ -298,12 +300,12 @@ private fun HomeAppearanceEditorContent(onBack: () -> Unit, onApplied: () -> Uni
         load(null,next);status="DIY码已放进预览，保存后用上";showDiyImport=false
     }
     }
-    if(showTrial)AlertDialog(onDismissRequest={showTrial=false},title={Text("试打一小句")},text={OutlinedTextField(testText,{testText=it},placeholder={Text("在这里叫出真正的键盘")},modifier=Modifier.fillMaxWidth())},confirmButton={TextButton(onClick={showTrial=false}){Text("好了")}})
+    if(showTrial)AlertDialog(onDismissRequest={showTrial=false},title={Text("试打一小句")},text={OutlinedTextField(testText,{testText=it},placeholder={Text("在这里叫出真正的键盘")},modifier=Modifier.fillMaxWidth())},confirmButton={HomeActionButton(onClick={showTrial=false}){Text("好了")}})
     if (deleteConfirm) AlertDialog(onDismissRequest = { deleteConfirm = false }, title = { Text("删除这份预设？") },
         text = { Text("如果它正在使用，键盘会恢复底座外观。") },
-        confirmButton = { TextButton(onClick = {
+        confirmButton = { HomeActionButton(onClick = {
             deleteConfirm = false
-            val deleting = id ?: return@TextButton
+            val deleting = id ?: return@HomeActionButton
             scope.launch {
                 busy = true
                 runCatching { withContext(Dispatchers.IO) { HomePresetStore.delete(context, deleting) } }
@@ -311,7 +313,7 @@ private fun HomeAppearanceEditorContent(onBack: () -> Unit, onApplied: () -> Uni
                     .onFailure { status = "删除没有完成" }
                 busy = false
             }
-        }) { Text("删除") } }, dismissButton = { TextButton(onClick = { deleteConfirm = false }) { Text("保留") } })
+        }) { Text("删除") } }, dismissButton = { HomeActionButton(onClick = { deleteConfirm = false }) { Text("保留") } })
     colorTarget?.let { target ->
         val palette = if (dark) draft.dark else draft.light
         HomeColorDialog(palette.color(target), onDismiss = { colorTarget = null }) { color ->
@@ -333,16 +335,16 @@ internal fun HomeValueSlider(label:String,value:Float,range:ClosedFloatingPointR
         Slider(value,onChange,valueRange=range,modifier=Modifier.weight(.6f),
             thumb={Spacer(Modifier.size(12.dp).background(MaterialTheme.colorScheme.primary,androidx.compose.foundation.shape.CircleShape))},
             track={state->SliderDefaults.Track(state,modifier=Modifier.height(3.dp),thumbTrackGapSize=0.dp,drawStopIndicator=null)})
-        TextButton(onClick={precise=true},contentPadding=PaddingValues(horizontal=2.dp),modifier=Modifier.widthIn(min=40.dp)){
+        HomeActionButton(onClick={precise=true},contentPadding=PaddingValues(horizontal=2.dp),modifier=Modifier.widthIn(min=40.dp)){
             Text("%.2f".format(java.util.Locale.ROOT,value).trimEnd('0').trimEnd('.'),fontFamily=androidx.compose.ui.text.font.FontFamily.Monospace,fontSize=11.sp)
         }
-        IconButton(onClick={onChange(initial)},modifier=Modifier.size(36.dp)){
+        HomeIconAction(onClick={onChange(initial)},modifier=Modifier.size(36.dp)){
             Icon(androidx.compose.material.icons.Icons.Default.Refresh,"${label}恢复默认",Modifier.size(16.dp))
         }
     }
     if(precise)AlertDialog(onDismissRequest={precise=false},title={Text(label)},text={
         OutlinedTextField(exact,{exact=it},singleLine=true,label={Text("精确数值")},isError=parsed==null,modifier=Modifier.fillMaxWidth())
-    },confirmButton={TextButton(enabled=parsed!=null,onClick={onChange(parsed!!);precise=false}){Text("用这个数值")}},dismissButton={TextButton(onClick={precise=false}){Text("取消")}})
+    },confirmButton={HomeActionButton(enabled=parsed!=null,onClick={onChange(parsed!!);precise=false}){Text("用这个数值")}},dismissButton={HomeActionButton(onClick={precise=false}){Text("取消")}})
 }
 
 @Composable
@@ -362,8 +364,8 @@ internal fun HomeColorDialog(initial: Long, onDismiss: () -> Unit, onChoose: (Lo
                 }, valueRange = 0f..255f)
             }
         }
-    }, confirmButton = { TextButton(enabled = rgb != null, onClick = { onChoose(0xFF000000 or rgb!!) }) { Text("用这个颜色") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } })
+    }, confirmButton = { HomeActionButton(enabled = rgb != null, onClick = { onChoose(0xFF000000 or rgb!!) }) { Text("用这个颜色") } },
+        dismissButton = { HomeActionButton(onClick = onDismiss) { Text("取消") } })
 }
 
 

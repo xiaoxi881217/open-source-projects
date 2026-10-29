@@ -922,7 +922,7 @@ fun SwipeableKeyButton(
                             val displayText = if (swipeDownHint.length <= 12) swipeDownHint else swipeDownHint.take(12)
                             Text(
                                 text = displayText,
-                                color = textColor.copy(alpha = 0.7f),
+                                color = homeKeyHintColor(textColor.copy(alpha = 0.7f)),
                                 fontSize = adjustedFontSize,
                                 fontWeight = FontWeight.Medium,
                                 textAlign = TextAlign.Right,
@@ -1034,7 +1034,7 @@ fun SwipeableKeyButton(
                     else if (swipeDownKeyLabel.length <= 4) swipeDownKeyLabel else swipeDownKeyLabel.take(4)
                 Text(
                     text = displayText,
-                    color = textColor.copy(alpha = 0.5f),
+                    color = homeKeyHintColor(textColor.copy(alpha = 0.5f)),
                     fontSize = effectiveSwipeFontSize,
                     fontWeight = FontWeight.Normal,
                     textAlign = TextAlign.Center,
@@ -1082,7 +1082,7 @@ private fun SwipeSideHint(
 ) {
     Text(
         text = if (text.length <= 3) text else text.take(3),
-        color = textColor.copy(alpha = 0.5f),
+        color = homeKeyHintColor(textColor.copy(alpha = 0.5f)),
         fontSize = fontSize,
         fontWeight = FontWeight.Normal,
         textAlign = TextAlign.Center,
@@ -2120,7 +2120,7 @@ fun SwipeableKeyButtonLandscape(
         if (swipeDownKeyLabel != null) {
             Text(
                 text = swipeDownKeyLabel,
-                color = textColor.copy(alpha = 0.5f),
+                color = homeKeyHintColor(textColor.copy(alpha = 0.5f)),
                 fontSize = effectiveSwipeFontSize.sp,
                 fontWeight = FontWeight.Normal,
                 fontFamily = keyLabelFontFamily,

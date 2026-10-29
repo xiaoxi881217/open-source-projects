@@ -34,8 +34,8 @@ fun ToolbarButtonIcon(
     HomeKeyStyleScope("toolbar:"+com.kingzcheung.xime.appearance.HomeKeyIds.token(item.id)) {
     val style=LocalHomeKeyStyle.current
     val iconBackground=(if(LocalHomeDarkAppearance.current)style?.backgroundDark else style?.backgroundLight)?.let{Color(it)}?:Color.Transparent
-    Box(modifier.alpha(style?.keyOpacity?:1f).homeKeyEffects(pressed).homeKeyFrost()
-        .homeKeyFace(iconBackground).homeKeyInnerShadows(),contentAlignment=Alignment.Center) {
+    Box(modifier.homeKeyEffects(pressed).homeKeyFrost()
+        .homeKeyFace(homeKeyBackground(iconBackground)).homeKeyInnerShadows(),contentAlignment=Alignment.Center) {
     val iconTint=homeKeyText(tint)
     ToolbarButtonGlyph(item,iconTint,contentDescription,fontSize)
     }
@@ -45,6 +45,7 @@ fun ToolbarButtonIcon(
 @Composable
 internal fun ToolbarButtonGlyph(item:ToolbarButtonItem,tint:Color,contentDescription:String?=null,fontSize:TextUnit=16.sp){
     val iconTint=tint
+    HomeReplacementIcon(contentDescription?:item.label) {
     when (item) {
         is ToolbarButtonItem.Builtin -> Icon(
             imageVector = item.button.icon,
@@ -77,5 +78,6 @@ internal fun ToolbarButtonGlyph(item:ToolbarButtonItem,tint:Color,contentDescrip
                 }
             }
         }
+    }
     }
 }

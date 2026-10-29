@@ -58,10 +58,10 @@ internal fun HomeSingleKeyPreview(preset: HomeVisualPreset,id: String,label: Str
     } else Modifier
     Column {
         FlowRow(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-            FilterChip(mode=="press",{mode="press"},label={Text("试按")})
-            if(onLabelChange!=null)FilterChip(mode=="label",{mode="label"},label={Text("移动文字")})
-            if(onHintChange!=null)FilterChip(mode=="hint",{mode="hint"},label={Text("移动小字")})
-            if(current.sticker!=null && onStickerChange!=null)FilterChip(mode=="sticker",{mode="sticker"},label={Text("摆放贴纸")})
+            HomeChoiceChip(mode=="press",{mode="press"},label={Text("试按")})
+            if(onLabelChange!=null)HomeChoiceChip(mode=="label",{mode="label"},label={Text("移动文字")})
+            if(onHintChange!=null)HomeChoiceChip(mode=="hint",{mode="hint"},label={Text("移动小字")})
+            if(current.sticker!=null && onStickerChange!=null)HomeChoiceChip(mode=="sticker",{mode="sticker"},label={Text("摆放贴纸")})
         }
         HomeStickerHost(Modifier.fillMaxWidth().height(150.dp).clipToBounds().then(gestures)) { previewModifier ->
             HomeBackdropHost(display,dark,previewModifier) {

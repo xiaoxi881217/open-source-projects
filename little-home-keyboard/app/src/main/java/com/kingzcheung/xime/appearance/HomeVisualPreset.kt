@@ -48,6 +48,10 @@ data class HomeKeyStyle(
     val frost: Float = 0f,
     val shape:HomeKeyShape?=null,
     val border:HomeBorder?=null,
+    val textOpacity:Float=1f,
+    val iconAsset:String?=null,
+    val iconSize:Float=24f,
+    val wallpaper:HomeWallpaper?=null,
 ) {
     fun movedLabel(dx: Float,dy: Float): HomeKeyStyle = if(!dx.isFinite() || !dy.isFinite())this else
         copy(labelOffsetX=(labelOffsetX+dx).coerceIn(-.4f,.4f),labelOffsetY=(labelOffsetY+dy).coerceIn(-.4f,.4f))
@@ -65,6 +69,10 @@ data class HomeKeyStyle(
         shadows.values.forEach { it.validate() }
         sticker?.validate()
         border?.validate()
+        wallpaper?.validate()
+        require(textOpacity.isFinite() && textOpacity in 0f..1f){"主文字不透明度超出范围"}
+        require(iconSize.isFinite() && iconSize in 12f..40f){"图标大小超出范围"}
+        require(iconAsset==null || iconAsset in HomeSticker.BUILTINS || iconAsset.matches(Regex("image:[a-f0-9]{64}"))){"图标来源不合适"}
         require(labelOffsetX.isFinite() && labelOffsetX in -0.4f..0.4f && labelOffsetY.isFinite() && labelOffsetY in -0.4f..0.4f) { "文字位置超出按键范围" }
         require(labelFontSize==null || labelFontSize.isFinite() && labelFontSize in 2f..32f) { "文字字号请保持在2到32之间" }
         require(hintOffsetX.isFinite() && hintOffsetX in -.8f.. .8f && hintOffsetY.isFinite() && hintOffsetY in -.8f.. .8f) { "小字位置超出安全范围" }
@@ -81,7 +89,7 @@ data class HomeKeyStyle(
 enum class HomeStyleProperty(val label: String) {
     SHAPE("按键形状"), BORDER("整套边框"), BORDER_KIND("边框线型"), BORDER_WIDTH("边框粗细"), BORDER_OPACITY("边框不透明度"), BORDER_LIGHT("浅色边框颜色"), BORDER_DARK("深色边框颜色"),
     HINT_ALL("上方小字整套样式"), HINT_POSITION("小字位置"), HINT_X("小字横向位置"), HINT_Y("小字纵向位置"), HINT_FONT_SIZE("小字字号"), HINT_LIGHT("浅色小字颜色"), HINT_DARK("深色小字颜色"), HINT_OPACITY("小字不透明度"), HINT_VISIBLE("小字显示开关"),
-    ALL("整套已支持的样式"), BACKGROUND_LIGHT("浅色按键颜色"), BACKGROUND_DARK("深色按键颜色"),
+    ALL("整套已支持的样式"), TEXT_OPACITY("主文字不透明度"), BACKGROUND_LIGHT("浅色按键颜色"), BACKGROUND_DARK("深色按键颜色"),
     TEXT_LIGHT("浅色文字颜色"), TEXT_DARK("深色文字颜色"), KEY_OPACITY("键帽底色不透明度"), FROST("键帽磨砂度"), LABEL_POSITION("文字位置"), LABEL_X("文字横向位置"), LABEL_Y("文字纵向位置"), LABEL_FONT_SIZE("文字字号"), CORNER_RADIUS("按键圆角"),
     SHADOW_ALL("四边整套阴影"), SHADOW_SIDE("这一边整套阴影"), SHADOW_SHAPE("阴影形状"), SHADOW_ENABLED("阴影开关"), SHADOW_INSET("阴影内外侧"), SHADOW_COLOR("阴影颜色"),
     SHADOW_OPACITY("阴影深浅"), SHADOW_BLUR("阴影模糊"), SHADOW_SPREAD("阴影扩散"),
@@ -114,10 +122,14 @@ data class HomeVisualPreset(
     val keyBorder:HomeBorder=HomeBorder(),
     val frameBorder:HomeBorder=HomeBorder(),
     val sectionSpacing:Float?=null,
+    val rowGaps:Map<String,List<Float>> = emptyMap(),
+    val toolbarOrder:List<String> = emptyList(),
 ) {
     fun permitsKeyBubble(pressed:Boolean,swiping:Boolean,longPress:Boolean):Boolean = swiping || longPress || (pressed && pressPopupEnabled)
     fun validate() {
         require(schemaVersion == 1) { "请使用支持这份预设的小家键盘版本" }
+        require(rowGaps.keys.all{it in setOf("qwerty","t9")} && rowGaps.values.all{it.size<=4 && it.all{v->v.isFinite() && v in 0f..20f}}){"行间距超出安全范围"}
+        require(toolbarOrder.size<=30 && toolbarOrder.distinct().size==toolbarOrder.size && toolbarOrder.all{it.length in 1..128 && it.none{c->c.isISOControl()}}){"工具栏顺序不合适"}
         require(name.isNotBlank() && name.length <= 80) { "预设名称请填1到80个字" }
         panelStyle?.validate()
         keyBorder.validate();frameBorder.validate()
@@ -138,6 +150,10 @@ data class HomeVisualPreset(
     }
 
     fun stickers():List<HomeSticker> = keys.values.mapNotNull{it.sticker}+listOfNotNull(panelStyle?.sticker)+floatingStickers.map{it.sticker}
+    fun styles():List<HomeKeyStyle> = keys.values.toList()+listOfNotNull(panelStyle)
+    fun wallpapers():List<HomeWallpaper> = listOfNotNull(wallpaper)+styles().mapNotNull{it.wallpaper}
+    fun iconAssets():List<String> = styles().mapNotNull{it.iconAsset}
+    fun rowGap(layout:String,index:Int):Float = rowGaps[layout]?.getOrNull(index)?:spacingY*2f
     fun panelBackground():HomeVisualPreset=copy(floatingStickers=emptyList(),frameBorder=HomeBorder())
 
     fun withGlobalRadius(value: Int): HomeVisualPreset = copy(cornerRadius=value, panelStyle=panelStyle?.copy(cornerRadius=null), keys=keys.mapValues { it.value.copy(cornerRadius=null) }).also { it.validate() }
@@ -167,6 +183,7 @@ data class HomeVisualPreset(
             val previous = updated[target] ?: HomeKeyStyle()
             updated[target] = when (property) {
                 HomeStyleProperty.ALL -> source
+                HomeStyleProperty.TEXT_OPACITY -> previous.copy(textOpacity=source.textOpacity)
                 HomeStyleProperty.SHAPE -> previous.copy(shape=source.shape?:keyShape)
                 HomeStyleProperty.BORDER -> previous.copy(border=source.border?:keyBorder)
                 HomeStyleProperty.BORDER_KIND,HomeStyleProperty.BORDER_WIDTH,HomeStyleProperty.BORDER_OPACITY,HomeStyleProperty.BORDER_LIGHT,HomeStyleProperty.BORDER_DARK -> {
