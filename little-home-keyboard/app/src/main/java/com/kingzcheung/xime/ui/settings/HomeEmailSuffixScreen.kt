@@ -25,7 +25,7 @@ import com.kingzcheung.xime.home.HomeEmailSuffixStore
                     Text("输入 @ 时显示后缀",Modifier.weight(1f));Switch(enabled,{enabled=it;message=""})
                 }
             }
-            Text("点候选只补后面的域名，不会重复输入 @。密码框与选中文字时不显示。",style=MaterialTheme.typography.bodyMedium)
+            Text("数字、符号页输入 @ 都能选后缀；已有全角＠时，选择后缀会转为标准@。密码框与选中文字时不显示。",style=MaterialTheme.typography.bodyMedium)
             OutlinedTextField(text,{if(it.length<=4096){text=it;message=""}},label={Text("常用后缀 · 每行一个")},supportingText={Text("可填 qq.com 或 @qq.com；最多12个，保存时按顺序去重。")},minLines=6,modifier=Modifier.fillMaxWidth())
             if(message.isNotEmpty())Text(message,style=MaterialTheme.typography.bodySmall)
             HomePrimaryAction(onClick={message=runCatching{HomeEmailSuffixStore.save(context,enabled,text);text=HomeEmailSuffixStore.domains(context).joinToString("\n");"已保存，下次输入 @ 就能选"}.getOrElse{it.message?:"这次没保存，请检查后缀格式"}},modifier=Modifier.fillMaxWidth()){Text("保存")}

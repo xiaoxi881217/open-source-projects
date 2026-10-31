@@ -980,11 +980,13 @@ object KeysConfigHelper {
     /** 配置版本号，每次 loadConfig 时递增，用于 Compose 感知配置变更。 */
     private val _configVersion = MutableStateFlow(0)
     val configVersion: StateFlow<Int> = _configVersion.asStateFlow()
+    internal fun notifyHomeSymbolsChanged(){_configVersion.value++}
     
     private var mergedConfigCache: XimeConfig? = null
     private var mergedConfigVersion = 0
     
     fun loadConfig(context: Context): KeysConfig {
+        com.kingzcheung.xime.home.HomeSwipeSymbolStore.initialize(context)
         loadXimeConfig(context)
         config = config.copy(
             swipeUp = getDefaultSwipeUp(),
@@ -2316,12 +2318,12 @@ object KeysConfigHelper {
     fun getStrokeKeyGesture(key: String): KeyBinding? = _strokeGestureConfigs[key]
 
     /** 获取某个按键的手势配置。 */
-    fun getKeyGesture(key: String): KeyBinding? = keyGestureConfig[key.lowercase()]
+    fun getKeyGesture(key: String): KeyBinding? = getKeyGesture(key,false)
 
     /** 根据输入模式获取某个按键的手势配置。 */
     fun getKeyGesture(key: String, isAsciiMode: Boolean): KeyBinding? {
         val config = if (isAsciiMode) _keyGestureConfigEn.value else _keyGestureConfig.value
-        return config[key.lowercase()]
+        return com.kingzcheung.xime.home.HomeSwipeSymbolStore.binding(key,config[key.lowercase()])
     }
 
     fun getKeyDisplayLabel(key: String, isAsciiMode: Boolean = false): String {
@@ -2345,8 +2347,7 @@ object KeysConfigHelper {
     fun getConfig(): KeysConfig = config
     
     fun getSwipeUpText(key: String, isAsciiMode: Boolean = false): String? {
-        val configMap = if (isAsciiMode) _keyGestureConfigEn.value else _keyGestureConfig.value
-        val gesture = configMap[key.lowercase()]?.swipeUp
+        val gesture = getKeyGesture(key,isAsciiMode)?.swipeUp
         if (gesture != null) {
             if (gesture.value.isNotEmpty()) return gesture.value
             if (gesture.label.isNotEmpty()) return gesture.label
@@ -2355,14 +2356,12 @@ object KeysConfigHelper {
     }
 
     fun getSwipeUpAction(key: String, isAsciiMode: Boolean = false): GestureAction? {
-        val configMap = if (isAsciiMode) _keyGestureConfigEn.value else _keyGestureConfig.value
-        return configMap[key.lowercase()]?.swipeUp?.action
+        return getKeyGesture(key,isAsciiMode)?.swipeUp?.action
     }
 
     /** 获取上滑显示文本（优先 label，fallback value；仅未配置 swipe_up 时用旧默认表） */
     fun getSwipeUpLabel(key: String, isAsciiMode: Boolean = false): String? {
-        val configMap = if (isAsciiMode) _keyGestureConfigEn.value else _keyGestureConfig.value
-        val gesture = configMap[key.lowercase()]?.swipeUp
+        val gesture = getKeyGesture(key,isAsciiMode)?.swipeUp
         if (gesture != null) {
             if (gesture.label.isNotEmpty()) return gesture.label
             if (gesture.value.isNotEmpty()) return gesture.value
@@ -2375,8 +2374,7 @@ object KeysConfigHelper {
 
     /** 获取上滑提交值（优先 value，fallback label；仅未配置 swipe_up 时用旧默认表） */
     fun getSwipeUpCommitValue(key: String, isAsciiMode: Boolean = false): String? {
-        val configMap = if (isAsciiMode) _keyGestureConfigEn.value else _keyGestureConfig.value
-        val gesture = configMap[key.lowercase()]?.swipeUp
+        val gesture = getKeyGesture(key,isAsciiMode)?.swipeUp
         if (gesture != null) {
             if (gesture.value.isNotEmpty()) return gesture.value
             if (gesture.label.isNotEmpty()) return gesture.label
@@ -2406,14 +2404,12 @@ object KeysConfigHelper {
 
     /** 获取上滑显示位置：key（按键上）或 bubble（气泡） */
     fun getSwipeUpDisplay(key: String, isAsciiMode: Boolean = false): DisplayMode {
-        val configMap = if (isAsciiMode) _keyGestureConfigEn.value else _keyGestureConfig.value
-        return configMap[key.lowercase()]?.swipeUp?.display ?: DisplayMode.BOTH
+        return getKeyGesture(key,isAsciiMode)?.swipeUp?.display ?: DisplayMode.BOTH
     }
 
     /** 上滑运行时是否弹出内容气泡（与 [getSwipeUpDisplay] 无关）。 */
     fun getSwipeUpBubble(key: String, isAsciiMode: Boolean = false): Boolean {
-        val configMap = if (isAsciiMode) _keyGestureConfigEn.value else _keyGestureConfig.value
-        return configMap[key.lowercase()]?.swipeUp?.bubble ?: true
+        return getKeyGesture(key,isAsciiMode)?.swipeUp?.bubble ?: true
     }
 
     /** 下滑运行时是否弹出内容气泡（与 [getSwipeDownDisplay] 无关）。 */

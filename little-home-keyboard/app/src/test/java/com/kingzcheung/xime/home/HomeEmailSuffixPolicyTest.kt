@@ -9,5 +9,21 @@ class HomeEmailSuffixPolicyTest {
     @Test fun rejectAddressesLinksAndMalformedDomains(){listOf("a@qq.com","https://qq.com","qq..com","-a.com","a-.com","*.com","邮箱.com","a.123","").forEach{assertTrue(it,runCatching{HomeEmailSuffixPolicy.parse(it)}.isFailure)}}
     @Test fun listAndSizeBounds(){assertTrue(runCatching{HomeEmailSuffixPolicy.parse((0..12).joinToString("\n"){"a$it.com"})}.isFailure);assertTrue(runCatching{HomeEmailSuffixPolicy.parse("a".repeat(4097))}.isFailure)}
     @Test fun privacySelectionCompositionAndVisibilityBlockReads(){assertTrue(HomeEmailSuffixPolicy.canRead(true,false,true,false,false,true));assertFalse(HomeEmailSuffixPolicy.canRead(false,false,true,false,false,true));assertFalse(HomeEmailSuffixPolicy.canRead(true,true,true,false,false,true));assertFalse(HomeEmailSuffixPolicy.canRead(true,false,false,false,false,true));assertFalse(HomeEmailSuffixPolicy.canRead(true,false,true,true,false,true));assertFalse(HomeEmailSuffixPolicy.canRead(true,false,true,false,true,true));assertFalse(HomeEmailSuffixPolicy.canRead(true,false,true,false,false,false))}
-    @Test fun onlyAnAtSignTriggersAndChoiceNeverDuplicatesIt(){val candidates=HomeEmailSuffixPolicy.suggestions("@",listOf("qq.com","163.com"));assertEquals(listOf("@qq.com","@163.com"),candidates);assertEquals("qq.com",HomeEmailSuffixPolicy.completion("@qq.com",candidates));assertNull(HomeEmailSuffixPolicy.completion("@bad.com",candidates));listOf(null,"","a","＠","x@").forEach{assertTrue(HomeEmailSuffixPolicy.suggestions(it,listOf("qq.com")).isEmpty())}}
+    @Test fun onlyAnAtSignTriggersAndChoiceNeverDuplicatesIt(){val candidates=HomeEmailSuffixPolicy.suggestions("@",listOf("qq.com","163.com"));assertEquals(listOf("@qq.com","@163.com"),candidates);assertEquals("qq.com",HomeEmailSuffixPolicy.completion("@qq.com",candidates));assertNull(HomeEmailSuffixPolicy.completion("@bad.com",candidates));listOf(null,"","a","x@").forEach{assertTrue(HomeEmailSuffixPolicy.suggestions(it,listOf("qq.com")).isEmpty())}}
+
+    @Test fun fullWidthSignIsShownAsAsciiAndOnlyThatSymbolIsNormalized() {
+        assertEquals(listOf("@qq.com"),HomeEmailSuffixPolicy.suggestions("＠",listOf("qq.com")))
+        assertEquals("@",HomeEmailSuffixPolicy.symbolKey("＠"));assertEquals("。",HomeEmailSuffixPolicy.symbolKey("。"))
+        assertEquals("hello＠",HomeEmailSuffixPolicy.symbolKey("hello＠"))
+        assertEquals(1 to "@qq.com",HomeEmailSuffixPolicy.completionEdit("@qq.com",listOf("@qq.com"),"＠"))
+        assertEquals(0 to "qq.com",HomeEmailSuffixPolicy.completionEdit("@qq.com",listOf("@qq.com"),"@"))
+        assertNull(HomeEmailSuffixPolicy.completionEdit("@qq.com",listOf("@qq.com"),"x"))
+    }
+    @Test fun numberCommonSymbolAndFullSymbolPagesCanShowEmailCandidates() {
+        val main=com.kingzcheung.xime.keyboard.KeyboardPage.Main(com.kingzcheung.xime.keyboard.MainType.FULL)
+        assertTrue(HomeEmailSuffixPolicy.canShowOn(main))
+        for(type in com.kingzcheung.xime.keyboard.PanelType.entries)assertTrue(HomeEmailSuffixPolicy.canShowOn(com.kingzcheung.xime.keyboard.KeyboardPage.Panel(type,com.kingzcheung.xime.keyboard.MainType.FULL)))
+        assertTrue(HomeEmailSuffixPolicy.canShowOn(com.kingzcheung.xime.keyboard.KeyboardPage.Overlay(com.kingzcheung.xime.keyboard.OverlayRoute.Symbol,emptyList(),main)))
+        assertFalse(HomeEmailSuffixPolicy.canShowOn(com.kingzcheung.xime.keyboard.KeyboardPage.Overlay(com.kingzcheung.xime.keyboard.OverlayRoute.Clipboard(),emptyList(),main)))
+    }
 }

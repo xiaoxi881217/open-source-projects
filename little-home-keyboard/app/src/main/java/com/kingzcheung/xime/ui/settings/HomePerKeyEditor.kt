@@ -63,7 +63,7 @@ internal fun HomePerKeyEditor(preset: HomeVisualPreset, dark: Boolean, onChange:
             HomeSyncAction("同步宽度与键帽高度",{sync=HomeStyleProperty.SIZE},caption="尺寸")
             Text("主键区宽度会重排行内键位；侧栏宽度与所有键帽高度最多填满槽位，收小时触摸槽位保留。",style=MaterialTheme.typography.bodySmall)
         }
-        HomeHintEditor(style,palette,dark,::set,{hintGesture=true;stickerGesture=false;fineGestures=true},{sync=it})
+        HomeHintEditor(style,palette,dark,::set,{hintGesture=true;stickerGesture=false;fineGestures=true},{sync=it},keyId=sourceId)
         FlowRow(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
             HomeKeyShape.entries.forEach{kind->HomeChoiceChip((style.shape?:preset.keyShape)==kind,{set(style.copy(shape=kind))},label={Text(kind.label)})}
             HomeSyncAction("同步形状",{sync=HomeStyleProperty.SHAPE})

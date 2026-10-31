@@ -514,6 +514,12 @@ internal class ImeKeyRouter(private val service: XimeInputMethodService) {
                     val isNumberKeyboard = service.keyboardViewModel.keyboardState.value is com.kingzcheung.xime.ui.keyboard.KeyboardLayoutState.Number
                     val isCommonSymbolKeyboard = service.keyboardViewModel.keyboardState.value is com.kingzcheung.xime.ui.keyboard.KeyboardLayoutState.CommonSymbol
 
+                    if(!candState.isComposing &&
+                        com.kingzcheung.xime.home.HomeEmailSuffixPolicy.isAtSign(key)) {
+                        withContext(Dispatchers.Main){service.calculatorEngine.clear();updateCalculatorCandidates();service.commitText("@");service.requestEmailSuffixRefresh()}
+                        return@launch
+                    }
+
                     val routeResult = com.kingzcheung.xime.calculator.routeCalculatorKey(
                         key = key,
                         isNumberKeyboard = isNumberKeyboard,

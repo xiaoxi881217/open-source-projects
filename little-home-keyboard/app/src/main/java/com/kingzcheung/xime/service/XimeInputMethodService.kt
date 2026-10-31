@@ -346,7 +346,7 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
             ui.quickSendFormFocused || ui.toolPanelInputFocused || ui.isVoiceMode,
             isInputViewShown)
         val before=if(allowed)runCatching{currentInputConnection?.getTextBeforeCursor(1,0)?.toString()}.getOrNull() else null
-        val labels=if(allowed && before=="@")com.kingzcheung.xime.home.HomeEmailSuffixPolicy.suggestions(before,
+        val labels=if(allowed && com.kingzcheung.xime.home.HomeEmailSuffixPolicy.isAtSign(before))com.kingzcheung.xime.home.HomeEmailSuffixPolicy.suggestions(before,
             com.kingzcheung.xime.home.HomeEmailSuffixStore.domains(this)) else emptyList()
         if(cs.emailSuffixCandidates!=labels || (labels.isNotEmpty() && (cs.pendingEnglishText.isNotEmpty() || cs.associationCandidates.isNotEmpty()))) {
             candidateState.value=candidateState.value.copy(emailSuffixCandidates=labels,
@@ -357,10 +357,10 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     }
     internal fun selectEmailSuffix(label:String):Boolean {
         val labels=refreshEmailSuffixCandidates()
-        val suffix=com.kingzcheung.xime.home.HomeEmailSuffixPolicy.completion(label,labels)?:return false
         val ic=currentInputConnection?:return false
+        val committed=completeHomeEmailSuffix(ic,label,labels)
         candidateState.value=candidateState.value.copy(emailSuffixCandidates=emptyList())
-        val committed=runCatching{ic.commitText(suffix,1)}.getOrDefault(false)
+
         requestEmailSuffixRefresh()
         return committed
     }
@@ -3175,6 +3175,8 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
         // 上屏会让光标前进 text.length，属自身写入
         selfWriteCaret.noteWrite(text.length, android.os.SystemClock.uptimeMillis())
         currentInputConnection?.commitText(text, 1)
+        requestEmailSuffixRefresh()
+        if(com.kingzcheung.xime.home.HomeEmailSuffixPolicy.isAtSign(text.takeLast(1)))mainHandler.postDelayed(emailSuffixRefresh,60)
 
         // text_committed 事件：真实上屏才累计/投递（内部编辑器分支已在上方 return；
         // 敏感输入框（密码）不计不投；粘贴性质上屏带 is_paste 标记，见 commitPastedText；

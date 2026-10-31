@@ -526,7 +526,9 @@ internal fun swipeUpHandlerFor(
     onKeyPress: (String) -> Unit,
     onCommitText: ((String) -> Unit)?,
     onGestureAction: ((GestureAction, String) -> Unit)?,
+    literalCommit:Boolean=false,
 ): ((String) -> Unit)? {
+    if(literalCommit && commitValue!=null)return{(onCommitText?:onKeyPress)(commitValue)}
     if (swipeUp == null && commitValue == null) return null
     // 参数为按键组件回传的上滑提示文本（本处理器用不到，忽略）
     return { _: String -> dispatchKeyActionOrPress(swipeUp, commitValue, onKeyPress, onCommitText, onGestureAction) }
@@ -1771,12 +1773,13 @@ fun KeyboardRowWithConfig(
                 { dispatchKeyActionOrPress(tapAction, commitValue, onKeyPress, onCommitText, onGestureAction) }
             }
             // 上滑动作接线（action: none 视为未绑定；COMMIT/未配置沿用旧上滑上屏）
+            val literalSwipeUp=com.kingzcheung.xime.home.HomeSwipeSymbolStore.value(key)!=null
             val onSwipeUp: ((String) -> Unit)? = remember(
-                key, swipeUpAction, swipeUpCommitValue, onKeyPress, onCommitText, onGestureAction
+                key, swipeUpAction, swipeUpCommitValue, literalSwipeUp, onKeyPress, onCommitText, onGestureAction
             ) {
                 swipeUpHandlerFor(
                     KeysConfigHelper.getKeyGesture(key, isAsciiMode)?.swipeUp,
-                    swipeUpCommitValue, onKeyPress, onCommitText, onGestureAction,
+                    swipeUpCommitValue, onKeyPress, onCommitText, onGestureAction,literalCommit=literalSwipeUp,
                 )
             }
             val onPress: (() -> Unit)? = remember(key, onKeyPressDown) { { onKeyPressDown?.invoke(key); Unit } }

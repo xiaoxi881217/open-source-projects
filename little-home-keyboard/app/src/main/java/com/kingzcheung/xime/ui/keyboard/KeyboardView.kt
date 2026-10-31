@@ -344,7 +344,7 @@ fun KeyboardView(
             val emailBarActive=cs.emailSuffixCandidates.isNotEmpty() && !cs.isComposing && cs.inputText.isEmpty() &&
                 cs.preeditText.isEmpty() && !showHandwritingCandidates &&
                 !state.isCalculatorMode && !candidatePageExpanded && !state.quickSendFormFocused && !state.toolPanelInputFocused &&
-                (page !is KeyboardPage.Overlay || (page as KeyboardPage.Overlay).route is OverlayRoute.Symbol)
+                com.kingzcheung.xime.home.HomeEmailSuffixPolicy.canShowOn(page)
             val candidateBarState = remember(
                 cs.candidates, cs.candidateComments, cs.inputText, cs.preeditText, cs.isComposing,
                 cs.associationCandidates, cs.pendingEnglishText, cs.isShowingRecentClipboard, cs.hasNextPage,
@@ -1587,7 +1587,7 @@ fun KeyboardView(
                             if (symbol == "delete") {
                                 callbacks.onKeyPress("delete", false)
                             } else {
-                                callbacks.onCommitText?.invoke(symbol)
+                                callbacks.onCommitText?.invoke(com.kingzcheung.xime.home.HomeEmailSuffixPolicy.symbolKey(symbol))
                             }
                         },
                         onBack = { viewModel.closeOverlay() },

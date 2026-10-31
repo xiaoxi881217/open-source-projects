@@ -19,7 +19,7 @@ import com.kingzcheung.xime.appearance.*
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun HomeHintEditor(style:HomeKeyStyle,palette:HomePalette,dark:Boolean,onChange:(HomeKeyStyle)->Unit,
-    onGesture:()->Unit,onSync:(HomeStyleProperty)->Unit) {
+    onGesture:()->Unit,onSync:(HomeStyleProperty)->Unit,keyId:String?=null) {
     var expanded by remember { mutableStateOf(false) }
     var precise by remember { mutableStateOf(false) }
     var color by remember { mutableStateOf(false) }
@@ -36,6 +36,7 @@ internal fun HomeHintEditor(style:HomeKeyStyle,palette:HomePalette,dark:Boolean,
             }
             AnimatedVisibility(expanded) {
                 Column(Modifier.padding(start=12.dp,end=12.dp,bottom=12.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
+                    keyId?.takeIf{it.startsWith("qwerty:")}?.substringAfter(':')?.let{HomeSwipeSymbolPicker(it)}
                     HomePaperRule()
                     Row(verticalAlignment=Alignment.CenterVertically) {
                         Text("显示小字",Modifier.weight(1f),style=MaterialTheme.typography.bodyMedium)

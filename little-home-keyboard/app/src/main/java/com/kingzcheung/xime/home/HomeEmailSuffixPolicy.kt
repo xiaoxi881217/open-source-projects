@@ -18,6 +18,16 @@ internal object HomeEmailSuffixPolicy {
     }
     fun canRead(enabled:Boolean,privateEditor:Boolean,collapsed:Boolean,composing:Boolean,internalEditor:Boolean,visible:Boolean)=
         enabled && !privateEditor && collapsed && !composing && !internalEditor && visible
-    fun suggestions(before:String?,domains:List<String>):List<String> = if(before=="@")domains.map{"@"+it} else emptyList()
+    fun isAtSign(text:String?)=text=="@" || text=="＠"
+    fun symbolKey(text:String)=if(isAtSign(text))"@" else text
+    fun suggestions(before:String?,domains:List<String>):List<String> = if(isAtSign(before))domains.map{"@"+it} else emptyList()
+    fun completionEdit(label:String,current:List<String>,before:String?):Pair<Int,String>? {
+        val domain=completion(label,current)?:return null
+        return when(before){"@"->0 to domain;"＠"->1 to "@$domain";else->null}
+    }
+    fun canShowOn(page:com.kingzcheung.xime.keyboard.KeyboardPage):Boolean = when(page){
+        is com.kingzcheung.xime.keyboard.KeyboardPage.Overlay -> page.route is com.kingzcheung.xime.keyboard.OverlayRoute.Symbol
+        else->true
+    }
     fun completion(label:String,current:List<String>):String? = label.takeIf{it in current && it.startsWith("@")}?.drop(1)
 }
