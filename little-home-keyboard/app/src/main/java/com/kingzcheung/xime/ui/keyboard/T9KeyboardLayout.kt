@@ -10,7 +10,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -1109,6 +1108,7 @@ private fun T9SpaceKey(
     val context = LocalContext.current
     val view = LocalView.current
     val currentOnKeyPress by rememberUpdatedState(onKeyPress)
+    val currentOnKeyPressDown by rememberUpdatedState(onKeyPressDown)
     val currentOnVoiceModeChange by rememberUpdatedState(onVoiceModeChange)
     val currentOnSwipeUp by rememberUpdatedState(onSwipeUp)
     val density = LocalDensity.current
@@ -1132,27 +1132,13 @@ private fun T9SpaceKey(
         modifier = modifier
             .fillMaxHeight()
             .padding(horizontal = 2.dp, vertical = 2.dp)
-            .pointerInput(voiceSticky, isSttEnabled) {
-                detectTapGestures(
-                    onPress = {
-                        if (voiceSticky) {
-                            tryAwaitRelease()
-                        } else {
-                            onKeyPressDown?.invoke("space")
-                            tryAwaitRelease()
-                        }
-                    },
-                    onTap = {
-                        if (voiceSticky) {
-                            currentOnVoiceModeChange?.invoke(false)
-                        } else {
-                            currentOnKeyPress("space")
-                        }
-                    },
-                    onLongPress = {
-                        if (voiceSticky) return@detectTapGestures
-                        // 语音转文本开关关闭时长按不触发语音
-                        if (!isSttEnabled) return@detectTapGestures
+            .pointerInput(voiceSticky, isSttEnabled, onSwipeUp != null) {
+                detectT9SpaceGestures(
+                    voiceSticky = voiceSticky,
+                    isSttEnabled = isSttEnabled,
+                    onPress = { currentOnKeyPressDown?.invoke("space") },
+                    onTap = { currentOnKeyPress("space") },
+                    onStartVoice = {
                         view.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
                         if (!PermissionHelper.hasRecordAudioPermission(context)) {
                             Toast.makeText(context, tr(R.string.s_xuyaomaikefengquanxiancainengs_3b6e4), Toast.LENGTH_SHORT).show()
@@ -1160,27 +1146,9 @@ private fun T9SpaceKey(
                         } else {
                             currentOnVoiceModeChange?.invoke(true)
                         }
-                    }
-                )
-            }
-            .pointerInput(voiceSticky, onSwipeUp) {
-                // 空格上滑（如直接输入数字 0）：纵向拖动超阈值触发一次。
-                // 与 detectTapGestures 共存：拖动时 tap 自动取消，点击/长按语音不受影响；
-                // 语音常驻态（轻触结束语音）不响应上滑。仅在已触发后消费事件，不干扰横向光标手势。
-                if (onSwipeUp == null || voiceSticky) return@pointerInput
-                var totalY = 0f
-                var triggered = false
-                val thresholdPx = 50.dp.toPx()
-                detectVerticalDragGestures(
-                    onDragStart = { totalY = 0f; triggered = false },
-                    onVerticalDrag = { change, dragAmount ->
-                        totalY += dragAmount
-                        if (!triggered && totalY < -thresholdPx) {
-                            triggered = true
-                            currentOnSwipeUp?.invoke()
-                        }
-                        if (triggered) change.consume()
                     },
+                    onStopVoice = { currentOnVoiceModeChange?.invoke(false) },
+                    onSwipeUp = if (onSwipeUp == null) null else { { currentOnSwipeUp?.invoke() } },
                 )
             }, contentAlignment = Alignment.Center
     ) {
