@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -648,12 +649,11 @@ private fun ModelTrailingButton(
             }
         }
         downloadState is ModelDownloadState.Error -> {
-            Text(
-                tr(R.string.s_xiazaishibai_3),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(end = 4.dp),
-            )
+            Column(horizontalAlignment = Alignment.End, modifier = Modifier.widthIn(max = 160.dp)) {
+                Text(downloadState.message, style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error, maxLines = 3)
+                TextButton(onClick = onDownload) { Text("重试") }
+            }
         }
         item.isDownloaded && item.hasUpdate -> {
             Column(horizontalAlignment = Alignment.End) {
@@ -1783,11 +1783,11 @@ private fun ModelVersionDownloadButton(
         }
 
         downloadState is ModelDownloadState.Error -> {
-            Text(
-                tr(R.string.s_xiazaishibai_3),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.error,
-            )
+            Column(horizontalAlignment = Alignment.End, modifier = Modifier.widthIn(max = 160.dp)) {
+                Text(downloadState.message, style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error, maxLines = 3)
+                TextButton(onClick = onDownload) { Text("重试") }
+            }
         }
 
         item.isDownloaded -> Text(

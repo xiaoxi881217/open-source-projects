@@ -1,0 +1,36 @@
+{
+  "apk": "D:\\Codex\\Downloads\\小家键盘-20261114-arm64.apk",
+  "versionCode": 20261114,
+  "bytes": 135185029,
+  "sha256": "e55a80f664a057bb088ff94818e83ccbff7709a95475937bc197f4d999648e5a",
+  "junit": {
+    "tests": 13,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "elf16k": {
+    "lib/arm64-v8a/libasr_jni.so": [
+      16384,
+      16384,
+      16384
+    ],
+    "lib/arm64-v8a/libsherpa-onnx-jni.so": [
+      16384,
+      16384,
+      16384
+    ]
+  },
+  "permissionsUnchanged": true,
+  "stableSigningCertificate": true,
+  "v1V2V3": true,
+  "testOnly": false,
+  "zip16k": true,
+  "nativeUnchanged": 7,
+  "newSherpaJni": true,
+  "dolphinJniAddedToAsr": true,
+  "localTlsRegression": "not rerun72; passed67",
+  "device": "USER_SELF_INSTALL; no phone UI automation or acceptance",
+  "nativeUnchangedFrom73": 9,
+  "privacyScan": true
+}

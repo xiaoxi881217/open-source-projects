@@ -55,16 +55,23 @@ data class ModelManagementUiState(
         else models.filter { it.model.category == selectedCategory }
 }
 
+internal fun mergeModelItems(items: List<ModelItemState>, previous: List<ModelItemState>): List<ModelItemState> =
+    items.map { item ->
+        val old = previous.firstOrNull { it.model.id == item.model.id }
+        if (old == null) item else item.copy(downloadState = old.downloadState)
+    }
+
 class ModelManagementViewModel(application: Application) : AndroidViewModel(application) {
     private val context = application.applicationContext
     private val TAG = "ModelManagementViewModel"
 
-    private val _uiState = MutableStateFlow(ModelManagementUiState())
+    private val _uiState = MutableStateFlow(ModelManagementUiState(
+        models = ModelManager.getAllModels().map { ModelItemState(it) }, isLoading = false
+    ))
     val uiState: StateFlow<ModelManagementUiState> = _uiState.asStateFlow()
 
     init {
-        // 首次进入直接走远程刷新：期间保持 isLoading=true、列表为空，
-        // 从而展示加载动画（与方案/插件 Tab 一致）；完成后由 refreshFromRemote 统一收尾。
+        // 内置清单立即可用，远程市场只在后台补充。
         viewModelScope.launch { refreshFromRemote() }
     }
 
@@ -89,19 +96,18 @@ class ModelManagementViewModel(application: Application) : AndroidViewModel(appl
                 installedVersion = if (downloaded) versions[model.id] else null,
             )
         }
-        _uiState.update { it.copy(models = items) }
+        _uiState.update { it.copy(models = mergeModelItems(items, it.models)) }
     }
 
     private suspend fun refreshFromRemote() {
         _uiState.update { it.copy(isLoading = true) }
         try {
+            loadModels()
             ModelManager.loadFromRemote(context)
         } catch (e: Exception) {
             FileLogger.w(TAG, "刷新模型市场失败: ${e.message}")
         } finally {
-            // loadModels 本身不改 isLoading；由这里统一收尾，确保首次进入时
-            // loading 动画持续到远程返回（与方案/插件 Tab 一致），
-            // 也不被 ON_RESUME 的本地状态刷新提前打断。
+            // 刷新本地状态时保留正在下载的进度与错误。
             loadModels()
             _uiState.update { it.copy(isLoading = false) }
         }
@@ -135,10 +141,10 @@ class ModelManagementViewModel(application: Application) : AndroidViewModel(appl
 
     fun downloadModel(modelId: String, version: ModelVersion? = null) {
         val index = _uiState.value.models.indexOfFirst { it.model.id == modelId }
-        if (index < 0) return
+        if (index < 0 || _uiState.value.models[index].downloadState is ModelDownloadState.Downloading) return
 
         viewModelScope.launch {
-            updateModelState(index) {
+            updateModelState(modelId) {
                 it.copy(downloadState = ModelDownloadState.Downloading(0f, 0, -1))
             }
 
@@ -147,21 +153,21 @@ class ModelManagementViewModel(application: Application) : AndroidViewModel(appl
                 ?: _uiState.value.selectedVersions[modelId]?.let { versionStr ->
                     ModelManager.getModel(modelId)?.versions?.firstOrNull { it.version == versionStr }
                 }
-            ModelManager.downloadModel(context, _uiState.value.models[index].model, { state ->
+            ModelManager.downloadModel(context, ModelManager.getModel(modelId) ?: return@launch, { state ->
                 when (state) {
                     is ModelDownloadState.Downloading -> {
-                        updateModelState(index) { it.copy(downloadState = state) }
+                        updateModelState(modelId) { it.copy(downloadState = state) }
                     }
                     is ModelDownloadState.Error -> {
                         downloadError = state.message
-                        updateModelState(index) { it.copy(downloadState = state) }
+                        updateModelState(modelId) { it.copy(downloadState = state) }
                     }
                     else -> {}
                 }
             }, selectedVersion)
 
             if (downloadError != null) {
-                updateModelState(index) { it.copy(downloadState = ModelDownloadState.Idle) }
+                _uiState.update { it.copy(toastMessage = downloadError) }
             } else {
                 val downloaded = withContext(Dispatchers.IO) {
                     ModelManager.isModelDownloaded(context, modelId)
@@ -173,14 +179,14 @@ class ModelManagementViewModel(application: Application) : AndroidViewModel(appl
                 } else 0L
                 // 记录本地下载版本（用于更新检测）；下载成功但版本未知时留空
                 val actualVersion = if (downloaded) {
-                    (selectedVersion?.version ?: _uiState.value.models[index].model.resolvedVersion()?.version)
+                    (selectedVersion?.version ?: ModelManager.getModel(modelId)?.resolvedVersion()?.version)
                         ?.also {
                             withContext(Dispatchers.IO) {
                                 MarketVersionStore.setModelVersion(context, modelId, it)
                             }
                         }
                 } else null
-                updateModelState(index) {
+                updateModelState(modelId) {
                     it.copy(
                         isDownloaded = downloaded,
                         diskSize = size,
@@ -208,7 +214,7 @@ class ModelManagementViewModel(application: Application) : AndroidViewModel(appl
                 }
                 val index = _uiState.value.models.indexOfFirst { it.model.id == modelId }
                 if (index >= 0) {
-                    updateModelState(index) {
+                    updateModelState(modelId) {
                         it.copy(isDownloaded = false, diskSize = 0, installedVersion = null)
                     }
                 }
@@ -223,10 +229,11 @@ class ModelManagementViewModel(application: Application) : AndroidViewModel(appl
         _uiState.update { it.copy(toastMessage = null) }
     }
 
-    private fun updateModelState(index: Int, transform: (ModelItemState) -> ModelItemState) {
+    private fun updateModelState(modelId: String, transform: (ModelItemState) -> ModelItemState) {
         _uiState.update { state ->
             val updated = state.models.toMutableList()
-            updated[index] = transform(updated[index])
+            val index = updated.indexOfFirst { it.model.id == modelId }
+            if (index >= 0) updated[index] = transform(updated[index])
             state.copy(models = updated)
         }
     }
