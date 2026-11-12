@@ -26,3 +26,6 @@
 -dontwarn java.lang.management.RuntimeMXBean
 
 -processkotlinnullchecks remove
+# sherpa JNI reads model configuration fields by their original names.
+-keep class com.k2fsa.sherpa.onnx.** { *; }
+-keep class com.kingzcheung.xime.speech.DolphinNative { *; }

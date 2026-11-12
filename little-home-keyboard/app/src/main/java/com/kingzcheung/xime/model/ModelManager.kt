@@ -5,6 +5,7 @@ import com.kingzcheung.xime.R
 import com.kingzcheung.xime.i18n.tr
 
 import android.content.Context
+import com.kingzcheung.xime.speech.models.AsrModelRegistry
 import com.kingzcheung.xime.util.FileLogger
 import java.io.File
 
@@ -28,7 +29,13 @@ object ModelManager {
      *  以 StateFlow 内的不可变列表为唯一状态源：读方拿到的是发布时的快照，
      *  与后续刷新互不干扰（历史上共享可变列表曾被遍历方并发 clear/addAll，
      *  连点刷新触发 ConcurrentModificationException 闪退）。 */
-    private fun allModels(): List<ModelInfo> = _modelsFlow.value
+    private fun allModels(): List<ModelInfo> {
+        val remote = _modelsFlow.value
+        val builtIn = AsrModelRegistry.downloadModels()
+        val locked = builtIn.filter { model -> model.files.any { it.sha256.isNotBlank() } || model.resolvedVersion()?.sha256?.isNotBlank() == true }.associateBy { it.id }
+        val present = remote.map { it.id }.toSet()
+        return remote.map { locked[it.id] ?: it } + builtIn.filter { it.id !in present }
+    }
 
     fun getAllModels(): List<ModelInfo> = allModels()
 
@@ -59,6 +66,8 @@ object ModelManager {
         ModelStorage.migrateLegacyForModel(context, model.id)
         val dir = getModelStorageDir(context, model) ?: return false
         if (!dir.exists()) return false
+        val profile = AsrModelRegistry.findById(model.id)
+        if (profile != null && profile.archiveSha256.isNotBlank() && !hasVerifiedModelMarker(dir, profile.archiveSha256)) return false
 
         return model.files.all { fileInfo ->
             val file = if (model.archiveUrl != null) {
@@ -66,7 +75,7 @@ object ModelManager {
             } else {
                 File(dir, fileInfo.name)
             }
-            file.exists() && file.length() > 0
+            file.isFile && file.length() > 0 && (fileInfo.bytes == 0L || file.length() == fileInfo.bytes)
         }
     }
 

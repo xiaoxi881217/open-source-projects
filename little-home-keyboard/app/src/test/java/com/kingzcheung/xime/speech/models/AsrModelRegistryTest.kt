@@ -54,9 +54,16 @@ class AsrModelRegistryTest {
     @Test
     fun `all profiles declare required inference files`() {
         AsrModelRegistry.profiles.forEach { profile ->
-            assertTrue(profile.encoderFile.isNotBlank())
-            assertTrue(profile.decoderFile.isNotBlank())
-            assertTrue(profile.joinerFile.isNotBlank())
+            when (profile.engine) {
+                AsrEngine.LEGACY_ZIPFORMER -> {
+                    assertTrue(profile.encoderFile.isNotBlank()); assertTrue(profile.decoderFile.isNotBlank()); assertTrue(profile.joinerFile.isNotBlank())
+                }
+                AsrEngine.STREAMING_PARAFORMER -> {
+                    assertTrue(profile.encoderFile.isNotBlank()); assertTrue(profile.decoderFile.isNotBlank()); assertTrue(profile.joinerFile.isBlank())
+                }
+                AsrEngine.STREAMING_CTC, AsrEngine.DOLPHIN_STREAMING -> assertTrue(profile.modelFile.isNotBlank())
+            }
+            assertTrue(profile.requiredFiles.isNotEmpty())
             assertTrue(profile.tokensFile.isNotBlank())
             assertTrue(profile.downloadUrl.isNotBlank())
         }
@@ -73,5 +80,25 @@ class AsrModelRegistryTest {
         assertEquals("zh-en", profile.language)
         // 该包为带标点变体：词表含标点 token，描述须注明
         assertTrue(profile.description.contains("标点"))
+    }
+
+    @Test fun `five new profiles keep the original two and pin every download`() {
+        assertEquals(listOf("zipformer-zh-int8","x-asr-480ms-zh-en-punct-int8"),AsrModelRegistry.profiles.take(2).map{it.id})
+        assertEquals(7,AsrModelRegistry.profiles.size)
+        AsrModelRegistry.profiles.drop(2).forEach { profile ->
+            assertTrue(profile.engine != AsrEngine.LEGACY_ZIPFORMER)
+            if (profile.downloadFiles.isEmpty()) assertTrue(profile.archiveSha256.matches(Regex("[0-9a-f]{64}")))
+            else profile.downloadFiles.forEach { file ->
+                assertTrue(file.downloadUrl.startsWith("https://")); assertTrue(file.sha256.matches(Regex("[0-9a-f]{64}")));assertTrue(file.bytes>0)
+            }
+        }
+    }
+    @Test fun `model centre fallback supplies all seven with matching runtime roles`() {
+        val models=AsrModelRegistry.downloadModels()
+        AsrModelRegistry.profiles.forEach { profile ->
+            val downloadable=models.single{it.id==profile.id}
+            assertEquals(profile.requiredFiles.toSet(),downloadable.files.map{it.name}.toSet())
+            assertEquals(profile.downloadFiles.isEmpty(),downloadable.archiveUrl!=null)
+        }
     }
 }

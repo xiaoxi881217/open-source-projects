@@ -7,6 +7,9 @@ import com.kingzcheung.xime.i18n.tr
 import android.content.Context
 import com.kingzcheung.xime.util.FileLogger
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -52,12 +55,15 @@ object ModelDownloader {
 
         try {
             if (target.archiveUrl != null) {
-                downloadAndExtractArchive(context, target.archiveUrl, storageDir, onProgress)
+                downloadAndExtractArchive(context, target.archiveUrl, storageDir, target.sha256, onProgress)
             } else {
                 downloadFiles(target.files, storageDir, onProgress)
             }
+            if (target.sha256.isNotBlank()) File(storageDir, ".verified-model").writeText(target.sha256)
             FileLogger.i(TAG, "Download complete: ${modelInfo.id}")
             onProgress(ModelDownloadState.Complete)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             FileLogger.e(TAG, "Download failed: ${modelInfo.id}: ${e.message}", e)
             onProgress(ModelDownloadState.Error(tr(R.string.s_xiazaishibai, e.message)))
@@ -78,7 +84,7 @@ object ModelDownloader {
 
         files.forEachIndexed { index, file ->
             FileLogger.i(TAG, "Downloading ${file.name} (${index + 1}/$totalFiles)")
-            downloadSingleFile(file.downloadUrl, File(targetDir, file.name)) { fileProgress ->
+            downloadSingleFile(file, File(targetDir, file.name)) { fileProgress ->
                 val overall = (index.toFloat() + fileProgress) / totalFiles
                 onProgress(ModelDownloadState.Downloading(overall, 0, -1))
             }
@@ -86,42 +92,35 @@ object ModelDownloader {
     }
 
     private suspend fun downloadSingleFile(
-        url: String,
+        file: ModelFile,
         targetFile: File,
         onProgress: (Float) -> Unit = {}
     ) {
-        val request = Request.Builder().url(url).build()
-        val response = client.newCall(request).execute()
-
-        if (!response.isSuccessful) {
-            throw IOException("HTTP ${response.code}")
-        }
-
-        val body = response.body ?: throw IOException("Response body is null")
-        val totalBytes = body.contentLength()
-        var downloadedBytes = 0L
-
-        targetFile.parentFile?.mkdirs()
-        body.byteStream().use { input ->
-            FileOutputStream(targetFile).use { output ->
-                val buffer = ByteArray(8192)
-                var bytesRead: Int
-                while (input.read(buffer).also { bytesRead = it } != -1) {
-                    output.write(buffer, 0, bytesRead)
-                    downloadedBytes += bytesRead
-                    if (totalBytes > 0) {
-                        onProgress(downloadedBytes.toFloat() / totalBytes.toFloat())
+        require(file.name == java.io.File(file.name).name && file.name !in listOf(".", ".."))
+        require(file.downloadUrl.startsWith("https://")) { "模型下载需要HTTPS" }
+        val temporary = File(targetFile.parentFile, targetFile.name + ".part")
+        try {
+            client.newCall(Request.Builder().url(file.downloadUrl).build()).execute().use { response ->
+                if (!response.isSuccessful) throw IOException("HTTP ${response.code}")
+                val body = response.body ?: throw IOException("模型下载没有返回文件")
+                val total = body.contentLength()
+                var received = 0L
+                targetFile.parentFile?.mkdirs()
+                body.byteStream().use { input -> FileOutputStream(temporary).use { output ->
+                    val buffer = ByteArray(65536)
+                    while (true) {
+                        currentCoroutineContext().ensureActive()
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        output.write(buffer, 0, count); received += count
+                        if (total > 0) onProgress(received.toFloat() / total)
                     }
-                }
+                } }
+                if (received == 0L || (total > 0 && received != total)) throw IOException("模型下载未完成")
             }
-        }
-
-        if (totalBytes > 0 && downloadedBytes != totalBytes) {
-            targetFile.delete()
-            throw IOException("Download incomplete: $downloadedBytes/$totalBytes bytes")
-        }
-
-        FileLogger.i(TAG, "Downloaded ${targetFile.name}: $downloadedBytes bytes")
+            verifyModelFile(temporary, file.sha256, file.bytes)
+            java.nio.file.Files.move(temporary.toPath(), targetFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        } finally { temporary.delete() }
     }
 
     private suspend fun downloadArchive(
@@ -170,6 +169,7 @@ object ModelDownloader {
         context: Context,
         archiveUrl: String,
         targetDir: File,
+        sha256: String,
         onProgress: (ModelDownloadState) -> Unit
     ) {
         val tmpFile = File(context.cacheDir, "${archiveUrl.hashCode()}.tar.bz2")
@@ -182,9 +182,23 @@ object ModelDownloader {
                 }
 
                 downloadArchive(archiveUrl, tmpFile, onProgress)
-                extractTarBz2(tmpFile, targetDir)
+                verifyModelFile(tmpFile, sha256)
+                val staged = File(context.cacheDir, "model-stage-${archiveUrl.hashCode()}")
+                check(staged.canonicalFile.parentFile == context.cacheDir.canonicalFile)
+                staged.deleteRecursively(); staged.mkdirs()
+                try {
+                    extractTarBz2(tmpFile, staged)
+                    File(targetDir, ".verified-model").delete()
+                    staged.walkTopDown().filter { it.isFile }.forEach { source ->
+                        val destination = safeModelEntry(targetDir, source.relativeTo(staged).path)
+                        destination.parentFile?.mkdirs()
+                        java.nio.file.Files.move(source.toPath(), destination.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+                    }
+                } finally { staged.deleteRecursively() }
                 tmpFile.delete()
                 return
+            } catch (e: CancellationException) {
+                tmpFile.delete(); throw e
             } catch (e: Exception) {
                 FileLogger.e(TAG, "Attempt $attempt/$MAX_RETRIES failed: ${e.message}")
                 tmpFile.delete()
@@ -210,7 +224,8 @@ object ModelDownloader {
                             val entryName = if (parts.size > 1) parts[1] else rawName
 
                             if (entryName.isNotEmpty() && !entry.isDirectory) {
-                                val outputFile = File(targetDir, entryName)
+                                require(entry.isFile && !entry.isSymbolicLink && !entry.isLink) { "模型包包含不支持的链接" }
+                                val outputFile = safeModelEntry(targetDir, entryName)
                                 outputFile.parentFile?.mkdirs()
                                 FileOutputStream(outputFile).use { out ->
                                     val buffer = ByteArray(8192)

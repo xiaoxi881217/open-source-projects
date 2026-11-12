@@ -4,6 +4,7 @@ import android.content.Context
 import com.kingzcheung.xime.model.ModelCategory
 import com.kingzcheung.xime.model.ModelManager
 import com.kingzcheung.xime.model.ModelStorage
+import com.kingzcheung.xime.speech.models.AsrEngine
 import com.kingzcheung.xime.speech.models.AsrModelProfile
 import com.kingzcheung.xime.speech.models.AsrModelRegistry
 import java.io.File
@@ -11,7 +12,7 @@ import java.io.File
 /**
  * ASR 模型管理与选择。
  *
- * 模型推理由自研的 streaming zipformer2 实现（libasr_jni.so）负责。
+ * 旧模型仍用原Zipformer JNI；新增模型由profile选择对应的本地流式后端。
  * 模型清单与描述来自「扩展商店」远程索引（[ModelManager]，category=asr），
  * 文件角色映射以内置适配注册表（[AsrModelRegistry]）为准；
  * 索引未加载时回退到注册表清单。
@@ -26,9 +27,6 @@ class AsrModelManager(private val context: Context) {
         private const val PREFS_NAME = "asr_model"
         private const val KEY_SELECTED_MODEL = "selected_model"
 
-        /** 词表文件名（与 [com.kingzcheung.xime.service.AsrInferenceService] 的加载判定一致）。 */
-        private const val TOKENS_FILE = "tokens.txt"
-
         /** 把索引里的 ModelInfo 转换为 ASR 专用模型信息（文件映射按 id 查注册表）。 */
         private fun toAsrModelInfo(info: com.kingzcheung.xime.model.ModelInfo): AsrModelInfo {
             val version = info.resolvedVersion()
@@ -40,7 +38,7 @@ class AsrModelManager(private val context: Context) {
                 // 旧索引版本节点没有 size 字段（空串），回退到模型级 size
                 size = version?.size?.takeIf { it.isNotBlank() } ?: info.size,
                 downloadUrl = info.archiveUrl ?: profile.downloadUrl,
-                files = fileNames
+                files = if (profile.downloadFiles.isNotEmpty() || profile.engine != AsrEngine.LEGACY_ZIPFORMER) profile.requiredFiles else fileNames.ifEmpty { profile.requiredFiles }
             )
         }
 
@@ -49,7 +47,7 @@ class AsrModelManager(private val context: Context) {
             description: String = this.description,
             size: String = this.size,
             downloadUrl: String = this.downloadUrl,
-            files: List<String> = listOf(encoderFile, decoderFile, joinerFile, tokensFile)
+            files: List<String> = requiredFiles
         ): AsrModelInfo = AsrModelInfo(
             id = id,
             name = name,
@@ -57,7 +55,9 @@ class AsrModelManager(private val context: Context) {
             language = language,
             size = size,
             downloadUrl = downloadUrl,
-            modelType = "transducer",
+            modelType = engine.name,
+            engine = engine,
+            modelFile = modelFile,
             files = files,
             encoderFile = encoderFile,
             decoderFile = decoderFile,
@@ -96,6 +96,8 @@ class AsrModelManager(private val context: Context) {
         val encoderFile: String = "",
         val decoderFile: String = "",
         val joinerFile: String = "",
+        val engine: AsrEngine = AsrEngine.LEGACY_ZIPFORMER,
+        val modelFile: String = "",
         val needsAutoPunctuation: Boolean = true
     )
 
@@ -137,8 +139,13 @@ class AsrModelManager(private val context: Context) {
         val dir = ModelStorage.getModelDir(context, modelId)
         if (!dir.isDirectory) return false
         val info = getModelInfo(modelId)
-        return listOf(info.encoderFile, info.decoderFile, info.joinerFile, TOKENS_FILE)
-            .all { name -> findFile(dir, name)?.let { it.exists() && it.length() > 0 } == true }
+        val profile = AsrModelRegistry.findById(modelId)
+        if (profile != null && profile.archiveSha256.isNotBlank() && !com.kingzcheung.xime.model.hasVerifiedModelMarker(dir, profile.archiveSha256)) return false
+        return info.files.isNotEmpty() && info.files.all { name ->
+            val file = findAsrFile(dir, name)
+            val expected = AsrModelRegistry.findById(modelId)?.downloadFiles?.find { it.name == name }?.bytes ?: profile?.fileSizes?.get(name) ?: 0L
+            file != null && file.length() > 0 && (expected == 0L || file.length() == expected)
+        }
     }
 
     /** 生效模型目录；未下载任何模型时为 null。 */

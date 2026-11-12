@@ -1,5 +1,10 @@
 package com.kingzcheung.xime.speech.models
 
+import com.kingzcheung.xime.model.ModelInfo
+import com.kingzcheung.xime.model.ModelFile
+import com.kingzcheung.xime.model.ModelVersion
+import com.kingzcheung.xime.model.ModelCategory
+
 /**
  * 本地 ASR 模型适配注册表。
  *
@@ -13,9 +18,17 @@ object AsrModelRegistry {
     val profiles: List<AsrModelProfile> = listOf(
         ZipformerZhInt8Profile,
         XAsr480msZhEnPunctInt8Profile,
-    )
+    ) + AdditionalStreamingAsrProfiles
 
     val default: AsrModelProfile = profiles.first()
+
+    fun downloadModels(): List<ModelInfo> = profiles.map { profile ->
+        ModelInfo(profile.id, profile.name, profile.description, ModelCategory.ASR,
+            versions = listOf(ModelVersion(version = if (profile.engine == AsrEngine.LEGACY_ZIPFORMER) "" else "20261112",
+                files = profile.downloadFiles.ifEmpty { profile.requiredFiles.map { ModelFile(it, "", bytes = profile.fileSizes[it] ?: 0L) } },
+                archiveUrl = profile.downloadUrl.takeIf { profile.downloadFiles.isEmpty() },
+                size = profile.size, sha256 = profile.archiveSha256)), size = profile.size)
+    }
 
     /** 按 id 查找内置适配。 */
     fun findById(id: String): AsrModelProfile? = profiles.find { it.id == id }

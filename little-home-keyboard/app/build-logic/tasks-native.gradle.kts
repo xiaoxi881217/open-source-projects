@@ -416,3 +416,46 @@ tasks.named("preBuild").configure {
     dependsOn(downloadKnf)
     dependsOn(buildTrie)
 }
+
+// 固定版流式ASR SDK，原Zipformer JNI与其ORT保持原样。
+val prepareStreamingAsrRuntime by tasks.registering {
+    val lockFile = rootProject.file("tools/asr/runtime-lock.json")
+    val target = file("libs/sherpa-onnx-2.0.1.aar")
+    inputs.file(lockFile)
+    outputs.file(target)
+    doLast {
+        @Suppress("UNCHECKED_CAST")
+        val lock = groovy.json.JsonSlurper().parse(lockFile) as Map<String, Any>
+        @Suppress("UNCHECKED_CAST")
+        val entries = lock["entries"] as Map<String, String>
+        fun sha(bytes: ByteArray) = java.security.MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it.toInt() and 255) }
+        fun valid(): Boolean = try {
+            java.util.zip.ZipFile(target).use { zip ->
+                val names = zip.entries().asSequence().map { it.name }.toSet()
+                names == entries.keys && entries.all { (name, hash) -> sha(zip.getInputStream(zip.getEntry(name)).use { it.readBytes() }) == hash }
+            }
+        } catch (_: Exception) { false }
+        if (target.exists() && valid()) return@doLast
+        val archive = File(buildDir, "sherpa-onnx-upstream-2.0.1.aar")
+        if (!archive.exists() || sha(archive.readBytes()) != lock["upstreamSha256"]) {
+            check(downloadWithMirrors(listOf(lock["url"] as String), archive, buildDir, "streaming ASR runtime")) { "流式ASR运行库下载失败" }
+        }
+        check(sha(archive.readBytes()) == lock["upstreamSha256"]) { "流式ASR运行库摘要不符" }
+        target.parentFile.mkdirs()
+        val temporary = File(target.parentFile, target.name + ".part")
+        try {
+            java.util.zip.ZipFile(archive).use { input ->
+                java.util.zip.ZipOutputStream(temporary.outputStream()).use { output ->
+                    entries.keys.sorted().forEach { name ->
+                        val bytes = input.getInputStream(input.getEntry(name)).use { it.readBytes() }
+                        check(sha(bytes) == entries[name])
+                        val item = java.util.zip.ZipEntry(name); item.time = 315532800000L
+                        output.putNextEntry(item); output.write(bytes); output.closeEntry()
+                    }
+                }
+            }
+            java.nio.file.Files.move(temporary.toPath(), target.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            check(valid())
+        } finally { temporary.delete() }
+    }
+}

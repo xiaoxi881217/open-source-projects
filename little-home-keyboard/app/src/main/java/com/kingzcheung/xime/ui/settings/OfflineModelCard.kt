@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material3.Card
@@ -194,6 +196,14 @@ internal fun OfflineModelCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
+            if (downloaded) {
+                TextButton(onClick = onNavigateToDownload) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("添加本地模型")
+                }
+            }
+
             // 已安装模型切换：与"在线服务"一致的单选弹窗交互。
             // 切换后卸载常驻引擎，下一次语音会话即按新模型加载。
             if (showModelPicker) {
@@ -204,7 +214,7 @@ internal fun OfflineModelCard(
                             SettingsChoiceOption(
                                 id = it.id,
                                 title = it.name,
-                                subtitle = "${it.size} · ${it.language}"
+                                subtitle = "${it.size} · ${it.language}\n${it.description}"
                             )
                         },
                     selectedId = model?.id,

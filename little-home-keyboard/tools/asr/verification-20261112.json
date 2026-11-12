@@ -1,0 +1,96 @@
+{
+  "desktopCpuChecks": [
+    {
+      "id": "paraformer-streaming-zh-en",
+      "partialBeforeEnd": true,
+      "resetProducesSameText": true,
+      "audioSeconds": 10.053125,
+      "desktopDecodeSeconds": [
+        0.7032553000026383,
+        0.7093887999944855
+      ],
+      "finalCharacters": 53,
+      "textSha256": "5e093fb7537829a24df325c4991bac81b94ef224855b827e6072fcbea5d18b92",
+      "phoneTest": false
+    },
+    {
+      "id": "paraformer-streaming-zh-yue-en",
+      "partialBeforeEnd": true,
+      "resetProducesSameText": true,
+      "audioSeconds": 5.976,
+      "desktopDecodeSeconds": [
+        0.5299897000077181,
+        0.5799847000162117
+      ],
+      "finalCharacters": 12,
+      "textSha256": "4e4ce838c19e782d571352f617bb1ed7c469aa5f8b72ce1ba48a114243e8413a",
+      "phoneTest": false
+    },
+    {
+      "id": "zipformer-ctc-small-zh",
+      "partialBeforeEnd": true,
+      "resetProducesSameText": true,
+      "audioSeconds": 5.6115,
+      "desktopDecodeSeconds": [
+        0.19999680001637898,
+        0.1827725999755785
+      ],
+      "finalCharacters": 27,
+      "textSha256": "6a62ef43613c9c677c7bd5d8db9c084ec98b3962a1242cf09caf68cfa9dd7af6",
+      "phoneTest": false
+    },
+    {
+      "id": "zipformer-ctc-multi-zh",
+      "partialBeforeEnd": true,
+      "resetProducesSameText": true,
+      "audioSeconds": 5.6115,
+      "desktopDecodeSeconds": [
+        0.39693349998560734,
+        0.3803798999870196
+      ],
+      "finalCharacters": 25,
+      "textSha256": "e278f706a020286848176f4963f665f0b528db3a4f2625ecf72ad301e71aef3f",
+      "phoneTest": false
+    },
+    {
+      "id": "dolphin-streaming-cn-base",
+      "partialBeforeEnd": true,
+      "resetProducesSameText": true,
+      "audioSeconds": 10.053125,
+      "desktopDecodeSeconds": [
+        0.4271335999947041,
+        0.4176364000013564
+      ],
+      "finalCharacters": 45,
+      "textSha256": "d1f7908fdf3d7bcd4d0e250f9eaced2bdc258583f6d5fd620f75feb15de5a22f",
+      "phoneTest": false
+    }
+  ],
+  "dolphinExport": {
+    "sourceCommit": "78ea615194777f91a3970ff010b5d678d0bbf5f0",
+    "weightsSha256": "62e4c11fe1e0e42bd34e444172c5a05e792c4b5a03750f794fa3206fc0649cd7",
+    "fp32ChunkParityChecks": [
+      16,
+      32,
+      48,
+      64,
+      64,
+      64,
+      64
+    ],
+    "quantization": "dynamic int8 linear layers; convolutions fp32",
+    "torch": "2.9.1+cpu",
+    "onnx": "1.20.0",
+    "onnxruntime": "1.23.2",
+    "phoneAcceptance": false
+  },
+  "multiQuantization": {
+    "sourceRevision": "c3ed5e404ede2134bef9d3d23119cb082c6d7eac",
+    "sourceSha256": "9fcae1718da34e4e34699bf466001d7ad2fab2b0462a8a4b16bbe308766fd31e",
+    "outputSha256": "0b0c6c485587b37d31ffb2296f4838fa7060b3595eb0230a087b7e62d8bec7d7",
+    "method": "dynamic int8 MatMul/Gemm; convolution float32",
+    "onnx": "1.20.0"
+  },
+  "licenseMetadataCheck": "2026-11-12 ModelScope API metadata: both Paraformer upstream models Apache License 2.0",
+  "androidStatus": "arm64 assembleDebug, AndroidTest source compile,221 targeted JVM, stable signing and new/changed ELF16KB passed; phone/microphone/download acceptance pending"
+}

@@ -4,7 +4,7 @@ import android.content.Context
 import com.kingzcheung.xime.util.FileLogger
 
 /**
- * 本地 zipformer2 离线识别后端支持。
+ * 本地流式离线识别后端支持。
  *
  * 模型生命周期：
  * - 打开"使用本地模型"开关时 [warmup] 加载模型并常驻 :asr 服务；

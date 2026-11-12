@@ -1,0 +1,20 @@
+{
+  "version": "2.0.1",
+  "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/v2.0.1/sherpa-onnx-static-link-onnxruntime-2.0.1.aar",
+  "upstreamSha256": "07e042d97f3a6bd5b7fe74d4eef0513dc01a714b16c15a903250095aba43a575",
+  "preparedSha256": "6bff67354ad943bab50876c7457340c789504ec346c703afaa08525871a2315c",
+  "source": "https://github.com/k2-fsa/sherpa-onnx/tree/v2.0.1",
+  "license": "Apache-2.0; dependent component notices must be retained",
+  "removedEntries": "jni/*/libonnxruntime.so only; use existing project runtime for dynamic ABIs",
+  "entries": {
+    "AndroidManifest.xml": "4e4afc406f4551293d45ef95eb63516774d0fa48bb0db415f6761b672ac9445a",
+    "META-INF/com/android/build/gradle/aar-metadata.properties": "9cc8517bbdf06d879f57a2cfd6f8c6914e48800d443421cd850971945f98e7b2",
+    "R.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "classes.jar": "0ee4991c56c19ef5a8a573b01891193d7298ffe7ebcc68f42b944361d8869d93",
+    "jni/arm64-v8a/libsherpa-onnx-jni.so": "491b1b6e287fdfe5e0e1ffa918f5e5556299cb14bea7b7b8a0c19468f4156193",
+    "jni/armeabi-v7a/libsherpa-onnx-jni.so": "fd2ab3cac78d88c89e8240900ac00c0548a538d225b44de4d083c13c8b1c792d",
+    "jni/x86/libsherpa-onnx-jni.so": "eb1903190814c65027edea5f9c46179b3d7cebf8cbf94c710381c9795e56f9db",
+    "jni/x86_64/libsherpa-onnx-jni.so": "9cd971c6a7fc3ec3ea5c22c516ca346c7e395d665cde794e2319e596ec25719b",
+    "proguard.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

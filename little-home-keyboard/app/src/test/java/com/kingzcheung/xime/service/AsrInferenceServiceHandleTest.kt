@@ -12,20 +12,20 @@ class AsrInferenceServiceHandleTest {
 
     @Test
     fun `尚未加载时需创建句柄`() {
-        assertTrue(AsrInferenceService.shouldReloadHandle(0L, null, "/models/x-asr"))
+        assertTrue(AsrInferenceService.shouldReloadSession(false, null, "/models/x-asr"))
     }
 
     @Test
     fun `同一模型目录复用句柄`() {
         assertFalse(
-            AsrInferenceService.shouldReloadHandle(42L, "/models/x-asr", "/models/x-asr")
+            AsrInferenceService.shouldReloadSession(true, "/models/x-asr", "/models/x-asr")
         )
     }
 
     @Test
     fun `切换模型目录需重建句柄`() {
         assertTrue(
-            AsrInferenceService.shouldReloadHandle(42L, "/models/zipformer-zh-int8", "/models/x-asr")
+            AsrInferenceService.shouldReloadSession(true, "/models/zipformer-zh-int8", "/models/x-asr")
         )
     }
 }

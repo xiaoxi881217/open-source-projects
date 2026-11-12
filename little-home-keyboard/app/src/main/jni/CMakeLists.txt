@@ -226,6 +226,7 @@ add_subdirectory(${KNF_LOCAL_DIR} knf_build)
 
 add_library(asr_jni SHARED
     ${ASR_SRC_DIR}/asr/asr_jni.cc
+    ${ASR_SRC_DIR}/asr/dolphin_jni.cc
     ${ASR_SRC_DIR}/asr/zipformer2_model.cc
     ${ASR_SRC_DIR}/asr/feature_extractor.cc
     ${ASR_SRC_DIR}/asr/streaming_recognizer.cc

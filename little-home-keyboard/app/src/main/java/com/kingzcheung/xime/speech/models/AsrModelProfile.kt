@@ -1,9 +1,13 @@
 package com.kingzcheung.xime.speech.models
 
+import com.kingzcheung.xime.model.ModelFile
+
+enum class AsrEngine { LEGACY_ZIPFORMER, STREAMING_PARAFORMER, STREAMING_CTC, DOLPHIN_STREAMING }
+
 /**
  * 单个本地 ASR 模型的适配描述（一个模型一个 profile）。
  *
- * 自研 streaming zipformer2 后端按文件角色加载模型，各模型的实际文件名
+ * 旧模型与新增流式后端分别按文件角色加载模型，各模型的实际文件名
  * 由 profile 声明；索引（扩展商店 models/index.yaml）只提供下载地址与
  * 展示信息，文件角色映射一律以 profile 为准。
  *
@@ -20,8 +24,16 @@ data class AsrModelProfile(
     val size: String,
     /** 索引未收录时的兜底下载地址（tar.bz2，顶层目录解压时剥离）。 */
     val downloadUrl: String,
-    val encoderFile: String,
-    val decoderFile: String,
-    val joinerFile: String,
+    val encoderFile: String = "",
+    val decoderFile: String = "",
+    val joinerFile: String = "",
     val tokensFile: String = "tokens.txt",
-)
+    val engine: AsrEngine = AsrEngine.LEGACY_ZIPFORMER,
+    val modelFile: String = "",
+    val downloadFiles: List<ModelFile> = emptyList(),
+    val archiveSha256: String = "",
+    val fileSizes: Map<String, Long> = emptyMap(),
+) {
+    val requiredFiles: List<String>
+        get() = listOf(encoderFile, decoderFile, joinerFile, modelFile, tokensFile).filter { it.isNotBlank() }.distinct()
+}

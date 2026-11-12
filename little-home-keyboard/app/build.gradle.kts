@@ -51,7 +51,7 @@ android {
         applicationId = "cn.qiyanja.littlehome.keyboard"
         minSdk = 28
         targetSdk = 35
-        versionCode = 20261112
+        versionCode = 20261113
         versionName = "3.4.1"
 
 
@@ -223,6 +223,8 @@ dependencies {
 
     // Coil (Image Loading)
     implementation(libs.coil)
+
+    implementation(files("libs/sherpa-onnx-2.0.1.aar").builtBy("prepareStreamingAsrRuntime"))
 
     // OkHttp for WebSocket and model download
     implementation("com.squareup.okhttp3:okhttp:5.4.0")
